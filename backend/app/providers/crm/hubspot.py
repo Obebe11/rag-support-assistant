@@ -98,6 +98,15 @@ def note_body(lead: LeadPayload) -> str:
     )
 
 
+def without_contact_details(text: str, lead: LeadPayload) -> str:
+    """Replace the lead's name, company and phone in an error text."""
+    first, last = split_name(lead.contact.name)
+    values = {lead.contact.name.strip(), first, last, lead.contact.company, lead.contact.phone}
+    for value in sorted((v for v in values if v and len(v) >= 2), key=len, reverse=True):
+        text = re.sub(rf"(?<!\w){re.escape(value)}(?!\w)", "[contact detail]", text)
+    return text
+
+
 def _hubspot_timestamp(moment: datetime | None) -> str:
     moment = (moment or datetime.now(UTC)).astimezone(UTC)
     return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
@@ -304,6 +313,16 @@ class HubSpotCRMProvider(CRMProvider):
     # --- Delivery -------------------------------------------------------------
 
     async def deliver_lead(self, lead: LeadPayload) -> LeadResult:
+        try:
+            return await self._deliver(lead)
+        except ProviderError as exc:
+            # HubSpot may quote a rejected value. The error is stored and shown,
+            # so it must not carry the visitor's contact details.
+            raise ProviderError(
+                without_contact_details(str(exc), lead), retryable=exc.retryable
+            ) from exc
+
+    async def _deliver(self, lead: LeadPayload) -> LeadResult:
         contact_id, contact_created = await self._upsert_contact(lead)
         note_id = None if contact_created else await self._find_note(contact_id, lead)
         note_created = note_id is None

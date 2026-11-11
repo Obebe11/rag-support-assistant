@@ -18,6 +18,7 @@ from app.providers.errors import ProviderError
 from app.providers.factory import build_providers
 from app.providers.llm.base import ChatMessage, LLMProvider, LLMResponse, TokenUsage
 from app.schemas.inquiries import InquiryField as F
+from app.services.inquiries import extraction
 from app.services.inquiries.extraction import has_purchase_intent, read_message
 from app.services.inquiries.intent import (
     DraftingInquiryIntentDetector,
@@ -321,6 +322,31 @@ async def test_detector_does_not_commit(
     assert await _inquiries(session_factory) == []
 
 
+async def test_detector_does_not_commit_an_update_of_the_draft(
+    session_factory: SessionFactory,
+    rules_detector: DraftingInquiryIntentDetector,
+    conversation_id: uuid.UUID,
+) -> None:
+    """A rolled-back reply leaves the stored draft as it was."""
+    first_message = "We want to buy 5 laser printers."
+    await _assess(session_factory, rules_detector, conversation_id, first_message)
+
+    update = await _assess(
+        session_factory,
+        rules_detector,
+        conversation_id,
+        first_message,
+        "Make it 8 laser printers, by the end of March.",
+        commit=False,
+    )
+
+    assert update.detected is True
+    assert update.fields[F.QUANTITY] == 8
+    (draft,) = await _inquiries(session_factory)
+    assert draft.quantity == 5
+    assert draft.timeline is None
+
+
 async def test_follow_up_messages_fill_the_same_draft(
     session_factory: SessionFactory,
     rules_detector: DraftingInquiryIntentDetector,
@@ -535,6 +561,99 @@ async def test_live_llm_decides_that_a_policy_question_is_not_an_inquiry(
     assert intent == NO_INQUIRY_INTENT
     assert len(llm.requests) == 1
     assert await _inquiries(session_factory) == []
+
+
+POLICY_QUESTIONS_NO_LLM_REPLY_CAN_OVERRIDE = [
+    "what is your return policy for printers",
+    "What is your return policy for printers?",
+    "what is your return policy if I order printers",
+    "Do you ship to Canada?",
+    "How long is the warranty on standing desks?",
+    "If I buy a printer, what's the warranty?",
+    "What's the warranty when I order 10 chairs?",
+    "Can I return an order I placed last week?",
+    "I ordered a desk last month and it arrived damaged.",
+    "I would like to return a chair I purchased.",
+    "I want to cancel my order.",
+    "Where is my order?",
+    "Do you offer bulk discounts if I order 50 chairs?",
+    "I want to buy but first, what's the return policy?",
+    "I'd like to get more information about your warranty.",
+    "If I order today, when does it ship?",
+    "Who pays for return shipping on a purchase?",
+]
+
+
+@pytest.mark.parametrize("message", POLICY_QUESTIONS_NO_LLM_REPLY_CAN_OVERRIDE)
+async def test_policy_question_opens_no_draft_even_when_the_llm_calls_it_a_purchase(
+    session_factory: SessionFactory, conversation_id: uuid.UUID, message: str
+) -> None:
+    llm = FakeLLM(_reply(True, product="printers", quantity=10))
+    detector = DraftingInquiryIntentDetector(llm)
+
+    intent = await _assess(session_factory, detector, conversation_id, message)
+
+    assert intent == NO_INQUIRY_INTENT
+    assert await _inquiries(session_factory) == []
+
+
+@pytest.mark.parametrize("message", POLICY_QUESTIONS)
+async def test_policy_question_opens_no_draft_with_a_live_llm(
+    session_factory: SessionFactory, conversation_id: uuid.UUID, message: str
+) -> None:
+    detector = DraftingInquiryIntentDetector(FakeLLM(_reply(False)))
+
+    intent = await _assess(session_factory, detector, conversation_id, message)
+
+    assert intent == NO_INQUIRY_INTENT
+    assert await _inquiries(session_factory) == []
+
+
+@pytest.mark.parametrize("message", PURCHASE_REQUESTS)
+def test_purchase_requests_are_never_vetoed_as_policy_questions(message: str) -> None:
+    assert extraction.asks_about_policy(message) is False
+
+
+async def test_policy_question_with_a_live_llm_leaves_the_open_draft_untouched(
+    session_factory: SessionFactory, conversation_id: uuid.UUID
+) -> None:
+    llm = FakeLLM(_reply(True, product="standing desks", quantity=20), _reply(True))
+    detector = DraftingInquiryIntentDetector(llm)
+    first_message = "I'd like to order 20 standing desks."
+    first = await _assess(session_factory, detector, conversation_id, first_message)
+
+    second = await _assess(
+        session_factory, detector, conversation_id, first_message, "What is your return policy?"
+    )
+
+    assert first.detected is True
+    assert second == NO_INQUIRY_INTENT
+    (draft,) = await _inquiries(session_factory)
+    assert (draft.product, draft.quantity) == ("standing desks", 20)
+
+
+async def test_requirement_that_mentions_a_policy_word_still_updates_the_open_draft(
+    session_factory: SessionFactory, conversation_id: uuid.UUID
+) -> None:
+    llm = FakeLLM(
+        _reply(True, product="standing desks", quantity=20),
+        _reply(True, notes="Include the 3-year warranty."),
+    )
+    detector = DraftingInquiryIntentDetector(llm)
+    first_message = "I'd like to order 20 standing desks."
+    await _assess(session_factory, detector, conversation_id, first_message)
+
+    second = await _assess(
+        session_factory,
+        detector,
+        conversation_id,
+        first_message,
+        "Please include the 3-year warranty.",
+    )
+
+    assert second.detected is True
+    (draft,) = await _inquiries(session_factory)
+    assert draft.notes == "Include the 3-year warranty."
 
 
 async def test_live_llm_sees_the_open_draft_and_updates_it(

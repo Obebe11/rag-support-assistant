@@ -222,7 +222,14 @@ class DraftingInquiryIntentDetector:
                 return _NOT_RELEVANT
             reading = await self._read_with_llm(turns, draft)
             if reading is not None:
-                return reading
+                # The LLM does not get the last word on policy questions: one that it
+                # reads as a purchase opens no draft and changes none.
+                vetoed = (
+                    reading.relevant
+                    and extraction.asks_about_policy(message)
+                    and (draft is None or not reading.fields)
+                )
+                return _NOT_RELEVANT if vetoed else reading
         return self._read_with_rules(message, draft)
 
     @staticmethod

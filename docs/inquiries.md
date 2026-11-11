@@ -9,7 +9,7 @@ An inquiry is what the visitor asks the company to act on. The visitor reviews i
 | `purchase` (default) | The visitor wants to buy. | product, quantity, timeline, contact name, contact email |
 | `handoff` | The documents did not answer the question and the visitor asks for a person. | contact name, contact email, notes (the question) |
 
-`kind` is set when the draft is created and never changes. `missing_fields` in every inquiry response lists the required fields that are still empty, in the order the UI should ask for them.
+`kind` is set when the draft is created and never changes. `missing_fields` in every inquiry response lists the required fields that are still empty, always in the order of the table above.
 
 ## Lifecycle
 
@@ -20,7 +20,7 @@ An inquiry is what the visitor asks the company to act on. The visitor reviews i
 
 Confirmation writes the inquiry status, the delivery row and the delivery job in one transaction, so an inquiry is never confirmed without a queued delivery.
 
-In the chat, the intent detector (`app/services/inquiries/intent.py`) creates and updates the purchase draft of a conversation from the visitor's messages. It never confirms a draft and never sends anything to the CRM. With a live LLM provider the reading comes from the LLM, and from rules when the LLM call fails or returns something unusable; without a live LLM it comes from rules only. The rules prefer missing a purchase request over opening a draft for a policy question: "What is your return policy for printers?" opens no draft.
+In the chat, the intent detector (`app/services/inquiries/intent.py`) creates and updates the purchase draft of a conversation from the visitor's messages. It never confirms a draft and never sends anything to the CRM. With a live LLM provider the reading comes from the LLM, and from rules when the LLM call fails or returns something unusable; without a live LLM it comes from rules only. The detector prefers missing a purchase request over opening a draft for a policy question: "What is your return policy for printers?" opens no draft. This does not depend on the LLM: a message about returns, refunds, warranty or cancellation, about an earlier order, or of the form "if I order ..., what ...?" opens no draft even when the LLM reads it as a purchase, unless one of its sentences plainly asks to buy. The cost is that some real requests are missed until the visitor says plainly that they want to order.
 
 ## Delivery
 
@@ -33,21 +33,21 @@ In the chat, the intent detector (`app/services/inquiries/intent.py`) creates an
 | `pending`, `attempt_count` above 0 | The last attempt hit a temporary error. The next automatic attempt starts at `next_attempt_at`. |
 | `delivered` | The CRM confirmed the record. `crm_contact_id` and `crm_record_id` are set. |
 | `failed`, `failure_reason: permanent_error` | The CRM rejected the request. A retry fails the same way until the cause is fixed. |
-| `failed`, `failure_reason: attempts_exhausted` | Every automatic attempt hit a temporary error. |
+| `failed`, `failure_reason: attempts_exhausted` | No automatic attempt is left: each one hit a temporary error or was cut short by a worker failure. |
 
-`attempts` lists every attempt with its outcome, error and time. `crm_mode` and `live` say where the delivery went: `live: false` means the simulated CRM, and no real CRM record exists.
+`attempts` lists every attempt that ended with a recorded result, with its outcome, error and time. An attempt cut short by a worker crash is counted in `attempt_count` but has no entry. `crm_mode` and `live` say where the delivery went: `live: false` means the simulated CRM, and no real CRM record exists.
 
 **Retries.** Temporary errors (timeout, connection problem, rate limit, CRM unavailable) are retried after a backoff of `JOB_BACKOFF_BASE_SECONDS`, doubled each time up to `JOB_BACKOFF_MAX_SECONDS`, until `DELIVERY_MAX_ATTEMPTS` attempts are used. A permanent error (rejected token, missing scope, invalid data) fails the delivery at once. `POST /api/inquiries/{id}/delivery/retry` gives a failed delivery a new set of attempts; it answers `409` for a delivery that is not failed.
 
-**Restarts.** The queue is a PostgreSQL table, so undelivered inquiries survive a restart of the API and the worker. If a worker dies during an attempt, another worker takes the job over when its lease (`JOB_LEASE_SECONDS`) ends. The delivery status is corrected from the job's state whenever it is read, so a dead worker does not leave a delivery `in_progress` forever. A worker that lost its lease cannot overwrite a result recorded by the worker that took over.
+**Restarts.** The queue is a PostgreSQL table, so undelivered inquiries survive a restart of the API and the worker. If a worker dies during an attempt, the delivery reads `in_progress` until the job's lease (`JOB_LEASE_SECONDS`) ends and a running worker takes the job over; the system cannot tell a dead worker from a slow one before that. When the queue then retries or fails the job, the delivery status follows the job's state the next time it is read. A worker that lost its lease cannot overwrite a result recorded by the worker that took over.
 
 **No duplicates.** Three layers keep one inquiry from becoming two CRM records:
 
 - The delivery job has the idempotency key `inquiries.deliver:{inquiry_id}`: a second confirmation or enqueue returns the existing job.
-- A delivery that is already `delivered` is never sent again, whatever job asks for it.
-- Each delivery carries the CRM idempotency key `inquiry:{inquiry_id}`. The CRM provider uses it to find a record that an earlier attempt created before it failed.
+- A job that starts after the delivery was recorded as `delivered` sends nothing.
+- Each delivery carries the CRM idempotency key `inquiry:{inquiry_id}`. The CRM provider uses it to find a record that an earlier attempt created before it failed. This layer also covers the one case the first two cannot: a worker that lost its lease while its CRM call was still running, so that two calls for the same inquiry reach the CRM.
 
-**Privacy.** The access token is read from the environment only and is never logged or returned by the API. Delivery errors are stored without the token and without email addresses. The worker logs inquiry and job IDs, not contact details.
+**Privacy.** The access token is read from the environment only and is never logged or returned by the API. Errors from HubSpot are stored with the token, email addresses and the inquiry's contact name, company and phone replaced by placeholders, and cut to a short length. The delivery code logs inquiry IDs and error texts, not contact details. One thing to know: `last_error` is technical text (for example, "HubSpot rejected the access token") and the delivery endpoint returns it to anyone who has the inquiry's ID, as the API contract defines.
 
 ## Simulated CRM
 

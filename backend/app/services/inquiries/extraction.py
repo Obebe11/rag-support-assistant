@@ -109,6 +109,11 @@ _POLICY_TOPIC = re.compile(
     r"service|servicing|repairs?|maintenance|terms|conditions)\b",
     _I,
 )
+_POLICY_CORE = re.compile(
+    r"\b(?:polic(?:y|ies)|returns?|returning|refunds?|refunding|warrant(?:y|ies)|guarantees?|"
+    r"exchanges?|exchanging|cancel(?:lation|ing|s)?)\b",
+    _I,
+)
 _QUESTION_START = re.compile(
     r"^(?:(?:hi|hello|hey|so|and|but|also|ok|okay|thanks|thank you)[,!. ]+)*"
     r"(?:how|what|whats|what's|when|where|why|who|which|is|are|was|were|does|do|did|will|"
@@ -282,6 +287,25 @@ def _states_intent(sentence: str) -> bool:
 
 def has_purchase_intent(text: str) -> bool:
     return any(_states_intent(sentence) for sentence in _sentences(_normalize(text)))
+
+
+def asks_about_policy(text: str) -> bool:
+    """True when the message is about a policy, a past order or a what-if, not a request.
+
+    The detector uses it as a veto on an LLM reading: a message that mentions
+    returns, refunds, warranty or cancellation, refers to an earlier order, or
+    asks "if I order ..., what ...?" opens no draft unless one of its sentences
+    plainly asks to buy.
+    """
+    sentences = _sentences(_normalize(text))
+    if any(_states_intent(sentence) for sentence in sentences):
+        return False
+    return any(
+        _POLICY_CORE.search(sentence)
+        or _PAST_PURCHASE.search(sentence)
+        or (_is_question(sentence) and _HYPOTHETICAL.search(sentence))
+        for sentence in sentences
+    )
 
 
 def might_concern_a_purchase(text: str) -> bool:

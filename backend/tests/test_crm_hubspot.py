@@ -586,6 +586,32 @@ async def test_errors_never_contain_the_token_or_an_email(
     assert TOKEN not in repr(crm.__dict__)
 
 
+async def test_errors_never_contain_the_contact_name_company_or_phone(
+    hubspot: FakeHubSpot,
+) -> None:
+    crm = hubspot.provider()
+    hubspot.fail_once(
+        "POST",
+        UPSERT,
+        _error(
+            400,
+            "VALIDATION_ERROR",
+            'Property values were not valid: firstname "Jane", lastname "Doe", '
+            "phone +1 555 010 2030 of Acme Corp (Jane Doe).",
+        ),
+    )
+
+    with pytest.raises(ProviderError) as error:
+        await crm.deliver_lead(_lead())
+
+    message = str(error.value)
+    assert error.value.retryable is False
+    for detail in ("Jane", "Doe", "+1 555 010 2030", "Acme Corp"):
+        assert detail not in message
+    assert "[contact detail]" in message
+    assert message.startswith("HubSpot rejected the request while saving the contact")
+
+
 async def test_wrong_token_is_a_permanent_error() -> None:
     hubspot = FakeHubSpot()
     crm = HubSpotCRMProvider(access_token=SecretStr("wrong"), transport=hubspot.transport())
