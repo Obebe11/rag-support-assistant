@@ -17,4 +17,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // UI primitives copied unchanged from T3 Code (see src/t3code/README.md).
+    // They keep upstream conventions that the project rules reject.
+    files: ["src/t3code/components/ui/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["error", { varsIgnorePattern: "^_" }],
+      "react-hooks/purity": "off",
+    },
+  },
 ]);

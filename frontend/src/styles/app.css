@@ -1,0 +1,15 @@
+/*
+ * Handoff AI additions on top of the theme in `src/t3code/index.css`.
+ * Keep this file small: components are styled with Tailwind classes and the
+ * theme tokens.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -11,6 +11,24 @@ export type HealthResponse = Schemas["HealthResponse"];
 export type ProviderModes = Schemas["ProviderModes"];
 export type ErrorResponse = Schemas["ErrorResponse"];
 export type ErrorCode = Schemas["ErrorCode"];
+export type ErrorDetail = Schemas["ErrorDetail"];
+export type ConversationRead = Schemas["ConversationRead"];
+export type MessageRead = Schemas["MessageRead"];
+export type MessageExchange = Schemas["MessageExchange"];
+export type Citation = Schemas["Citation"];
+export type InquiryRead = Schemas["InquiryRead"];
+export type InquiryCreate = Schemas["InquiryCreate"];
+export type InquiryUpdate = Schemas["InquiryUpdate"];
+export type InquiryKind = Schemas["InquiryKind"];
+export type InquiryField = Schemas["InquiryField"];
+export type InquiryList = Schemas["InquiryList"];
+export type DeliveryRead = Schemas["DeliveryRead"];
+export type DeliveryStatus = Schemas["DeliveryStatus"];
+export type DocumentRead = Schemas["DocumentRead"];
+export type DocumentDetail = Schemas["DocumentDetail"];
+export type DocumentVersionRead = Schemas["DocumentVersionRead"];
+export type DocumentList = Schemas["DocumentList"];
+export type IndexingStatus = Schemas["IndexingStatus"];
 
 const baseUrl: string = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
@@ -27,6 +45,24 @@ export function createAdminApi(token: string) {
     fetch: deferredFetch,
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+export type AdminApi = ReturnType<typeof createAdminApi>;
+
+/**
+ * Body serializer for the multipart upload endpoints: sends the file and the
+ * optional text fields as `multipart/form-data`. Empty values are left out.
+ */
+export function toFormData(body: unknown): FormData {
+  const form = new FormData();
+  for (const [key, value] of Object.entries((body ?? {}) as Record<string, unknown>)) {
+    if (value instanceof Blob) {
+      form.append(key, value, value instanceof File ? value.name : undefined);
+    } else if (typeof value === "string" && value !== "") {
+      form.append(key, value);
+    }
+  }
+  return form;
 }
 
 /** An API error in the common format, or a transport failure (`status` 0). */
