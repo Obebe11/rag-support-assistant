@@ -17,6 +17,7 @@ Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), Node.js 22 or later
 make setup              # install backend and frontend dependencies
 cp .env.example .env    # optional: every setting has a local default
 make dev                # database, migrations, API, worker and frontend
+make seed               # load the demo knowledge base (Northline Office Equipment)
 make check              # linters, type checks, tests and the frontend build
 ```
 

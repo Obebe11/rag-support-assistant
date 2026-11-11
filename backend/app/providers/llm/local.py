@@ -1,13 +1,19 @@
 """Local LLM mode: offline, deterministic, clearly labeled as not a real LLM.
 
 Owner: T3.
+
+This mode generates no text. Services check `live` first: the chat service
+builds an extractive reply from retrieved passages instead of prompting (see
+`app.services.chat.extractive`). A direct call to `complete` is a programming
+error and fails with a non-retryable `ProviderError`, so local mode can never
+pass for a working LLM.
 """
 
 from collections.abc import Sequence
 from typing import ClassVar, Self
 
 from app.core.config import LLMProviderMode, Settings
-from app.providers.errors import ProviderNotImplementedError
+from app.providers.errors import ProviderError
 from app.providers.llm.base import ChatMessage, LLMProvider, LLMResponse
 
 
@@ -31,4 +37,8 @@ class LocalLLMProvider(LLMProvider):
         max_output_tokens: int | None = None,
         json_output: bool = False,
     ) -> LLMResponse:
-        raise ProviderNotImplementedError("The local LLM provider")
+        raise ProviderError(
+            "The local LLM mode does not generate text. Check `live` and use an "
+            "extractive reply instead.",
+            retryable=False,
+        )

@@ -2,7 +2,7 @@
 
 Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes the foundation: the repository layout, the data model, the API contract, the provider modes, background jobs, and who owns which module.
 
-Status: the foundation is in place. Every endpoint except `GET /api/health` is declared in the contract and returns `501` until its owner implements it.
+Status: the foundation, the knowledge base and the chat are in place. The remaining endpoints are declared in the contract and return `501` until their owner implements them.
 
 ## Repository layout
 
@@ -95,6 +95,7 @@ The contract lives in `backend/app/schemas` and is exported to `docs/openapi.jso
 | `GET /api/admin/documents/{id}` | Versions and indexing status | T3 |
 | `POST /api/admin/documents/{id}/versions` | Replace a document | T3 |
 | `DELETE /api/admin/documents/{id}` | Delete a document | T3 |
+| `POST /api/admin/documents/search` | Retrieval on its own: the top passages for a query, without an answer | T3 |
 | `GET /api/admin/inquiries` | Inquiries with delivery status | T4 |
 
 **Assistant replies.** `answer_type` tells the UI what to render:
@@ -103,6 +104,9 @@ The contract lives in `backend/app/schemas` and is exported to `docs/openapi.jso
 - `knowledge_gap`: the documents do not answer the question; the UI offers a human handoff.
 - `clarification`: the assistant asks for more detail.
 - `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to review and confirm.
+- `refusal`: the message tried to override the assistant's instructions or role; the assistant declines.
+
+An assistant message also carries `usage`: provider modes and models, token counts when a live LLM reports them, response, retrieval and LLM time in milliseconds, and `retrieved`, the ranked passages the reply was built from.
 
 **Errors.** Every error has the same shape:
 
@@ -134,9 +138,9 @@ Each provider is selected by its own setting. Model IDs, base URLs and keys come
 
 `local` and `simulated` work offline, without API keys. They are demo modes: `local` is not a working LLM and `simulated` is not a live CRM integration. Each provider class has a `live` flag; `GET /api/health` reports it, and the UI shows a "Demo mode" banner for every provider that is not live. Deliveries record the CRM mode they ran in.
 
-Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag. The current classes are stubs that raise `ProviderNotImplementedError`.
+Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag. The CRM classes are stubs that raise `ProviderNotImplementedError`.
 
-How a service behaves in local LLM mode is T3's decision: it may check `llm.live` and build an extractive reply from retrieved excerpts instead of prompting.
+The LLM and embedding providers are implemented. The `openai_compatible` classes share the HTTP client in `app/providers/openai_http.py`: timeouts, connection errors and the statuses 408, 409, 425, 429 and 5xx are retryable `ProviderError`s, other statuses and malformed replies are not. They are tested against a mock transport only and have not been run against a live API. [Knowledge base and chat](#knowledge-base-and-chat) describes the local modes.
 
 ## Chat and inquiries
 
@@ -149,6 +153,58 @@ intent = await detector.assess(session, conversation_id=..., turns=[...])
 `InquiryIntent` says whether the visitor wants to buy, which fields are already extracted, which required fields are missing, and which draft the inquiry module saved. The detector may write through the chat's session but must not commit, so the draft and the reply are stored together.
 
 The default detector reports no intent. T4 returns the real one from `app/services/inquiries/intent.py`; routes receive it as `InquiryIntentDetectorDep`.
+
+## Knowledge base and chat
+
+### Ingestion
+
+An upload is checked and stored by the API, then indexed by the `documents.index_version` job (`app/services/documents/`).
+
+- **Formats.** Markdown, and PDF with a text layer (pypdf). A PDF without text fails indexing with a clear error; there is no OCR. The format is taken from the file content first (`%PDF`), then from the file name.
+- **Upload checks.** `app/api/upload_guard.py` is an ASGI middleware in front of the two upload routes. It checks the admin token and stops a body larger than `MAX_UPLOAD_BYTES` before the application reads it, with or without a `Content-Length` header. The service checks the file size again, the type (`415`) and that the file can be parsed (`422`).
+- **Sections.** A Markdown chunk keeps its heading path below the document title, joined by `" > "`, for example `Returns > How long do I have to return an item?`. HTML comments are removed. A PDF chunk keeps its page number (1-based) and the headings found by font size and weight; lines that repeat at the top or bottom of every page are dropped and tables are rebuilt as Markdown tables.
+- **Chunks.** A chunk never crosses a heading or a page. A section longer than 1,200 characters is split at paragraphs, list items, table rows or sentences; a split table repeats its header row. The text that is embedded is the document title, the heading path and the chunk.
+- **Status.** A version moves through `pending` → `indexing` → `ready` or `failed`. The status and the error text are committed as they change, so `GET /api/admin/documents/{id}` shows them while the job runs or waits for a retry. A parse error fails the job at once; a retryable provider error is retried by the queue, and the version shows `pending` with the last error until the final attempt.
+- **Activation.** The chunks, the `ready` status and the switch of the active version are one transaction under a lock on the document row. A version indexed late does not replace a newer active one. Replacement and deletion keep the old rows: citations of earlier replies point at them, and retrieval skips them.
+
+### Retrieval
+
+`app/services/documents/retrieval.py` runs an exact cosine search over chunks whose version is active, whose document is not deleted and whose `embedding_model` is the current one. There is no hybrid search and no reranker. The score ranks passages; it does not say whether a passage answers the question.
+
+Retrieval is available without an answer in two ways:
+
+- `POST /api/admin/documents/search` with `{"query": "...", "top_k": 5}` returns the ranked passages with document, version, section, page and text. In code: `retrieval.search(session, embeddings, query, limit=5)`.
+- Every assistant message stores `usage.retrieved`: the passages its reply was built from, best first. For a follow-up question this search also uses the earlier visitor messages, so it can differ from a search for the message alone.
+
+### Embedding and LLM modes
+
+- **`EMBEDDING_PROVIDER=local`** hashes stemmed words and adjacent word pairs into a 1,024-dimension vector (`local-hashing-v1-1024`). It is deterministic, needs no model download, and matches words, not meaning: a synonym is not found.
+- **`LLM_PROVIDER=local`** generates no text. The reply quotes the retrieved passages that share the most informative words with the question, and ends with a notice that it was not written by an AI model. `LocalLLMProvider.complete` raises; the chat service checks `llm.live`.
+- **`LLM_PROVIDER=openai_compatible`** sends the system prompt, recent messages and numbered excerpts to the chat completions API and asks for a JSON object with the answer type, the answer and the excerpt numbers it used.
+
+### How a reply is chosen
+
+`app/services/chat/service.py` handles one visitor message in this order and commits the message and the reply together:
+
+1. **Override guard** (`guard.py`). A message that tries to override the instructions, extract the prompt, change the role, dictate the reply or change the knowledge base gets a fixed `refusal`. Nothing is searched and no LLM is called. A refused message is left out of the context of later messages.
+2. **Inquiry seam.** The detector described in [Chat and inquiries](#chat-and-inquiries) is asked next. Detected intent gives an `inquiry_offer`.
+3. **Retrieval.** The message is embedded and searched. Earlier visitor messages (the last two) are added to the query with a lower weight, or with the same weight when the new message is too short to stand alone ("And for the P-240?").
+4. **Document instructions are data.** Before a passage is quoted or sent to an LLM, blocks that address the assistant or try to override instructions are removed (`strip_embedded_instructions`), and a section whose heading does so is dropped whole. The LLM prompt repeats the rule.
+5. **Answer.**
+   - Local mode: each content word of the question is weighted by how rare it is among the retrieved passages. The reply is `grounded` only if the quoted passages cover at least half of that weight; otherwise it is a `knowledge_gap`. A message without any content word gets a `clarification`. The retrieval score alone never makes a reply grounded.
+   - LLM mode: the model chooses the answer type. A `grounded` reply must cite at least one excerpt that was really sent; if it does not, the reply is replaced by a `knowledge_gap`, and `usage.note` records why. A knowledge gap that does not already mention a person or the team gets an offer to pass the question on.
+
+A provider failure, or an LLM reply that is not the expected JSON, returns `503`; nothing is stored, and the visitor can send the message again.
+
+The guards are deterministic patterns for explicit attempts. They are a first line of defense, not proof against every phrasing.
+
+Known limits of the local mode: it cannot paraphrase, compare or compute; it finds an answer only when the question and the document share words; an ambiguous question usually gets the closest quote instead of a clarifying question.
+
+### Seeding
+
+`make seed` loads `knowledge-base/northline/manifest.json` and returns when every document is searchable. It indexes in-process, so no worker has to run. The command is idempotent: an entry is matched to a stored document by its `title`, a file with a new checksum becomes a new version, and a document that is not searchable with the current embedding model is indexed again.
+
+A manifest entry maps to the stored document as follows: `title` → `documents.title`, `version` → `document_versions.version_label`, the file name of `path` → `source_filename`. `python -m scripts.seed_knowledge_base --map-file map.json` writes `doc_id` with the stored document ID for every entry, and `--manifest` loads another manifest of the same format, such as `evals/fixtures/manifest.json`.
 
 ## Background jobs
 
@@ -212,6 +268,7 @@ make dev      # database, migrations, API, worker, frontend
 make check    # ruff, mypy, pytest, frontend API types, lint, type check, tests, build
 make openapi  # regenerate docs/openapi.json and frontend/src/api/schema.d.ts
 make migrate  # apply migrations
+make seed     # load the Northline knowledge base (idempotent)
 make db       # run only the embedded PostgreSQL and print its DATABASE_URL
 ```
 
@@ -224,5 +281,5 @@ Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 ## Known limits of the foundation
 
 - The Docker Compose setup was written without a Docker host and has not been run yet.
-- FastAPI reads a request body before it checks the admin token, so an unauthenticated client can make the API read an upload before it answers `401`. The nginx configuration caps the body size; T3 enforces `MAX_UPLOAD_BYTES` in the upload endpoints.
+- FastAPI reads a request body before it checks the admin token. The document upload routes are protected by `app/api/upload_guard.py`, which checks the token and `MAX_UPLOAD_BYTES` before the body is read. Other admin routes take small JSON bodies; the nginx configuration caps the body size for them.
 - What "human handoff" does after a knowledge gap is not part of the contract yet; today it is a UI offer only.

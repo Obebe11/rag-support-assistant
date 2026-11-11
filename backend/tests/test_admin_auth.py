@@ -71,8 +71,7 @@ async def test_admin_endpoint_accepts_the_configured_token(
 ) -> None:
     response = await client.get("/api/admin/documents", headers=admin_headers)
 
-    # Authorization passed; the endpoint itself is still a stub.
-    assert response.status_code == 501
+    assert response.status_code == 200
 
 
 async def test_admin_is_closed_when_no_token_is_configured(settings: Settings) -> None:

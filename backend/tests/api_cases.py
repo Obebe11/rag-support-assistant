@@ -24,11 +24,6 @@ class ApiCase:
 
 
 VISITOR_STUBS = [
-    ApiCase("POST", "/api/conversations"),
-    ApiCase("GET", f"/api/conversations/{ANY_ID}"),
-    ApiCase(
-        "POST", f"/api/conversations/{ANY_ID}/messages", json={"content": "Do you ship to Canada?"}
-    ),
     ApiCase("POST", "/api/inquiries", json={"product": "Standing desk", "quantity": 20}),
     ApiCase("GET", f"/api/inquiries/{ANY_ID}"),
     ApiCase("PATCH", f"/api/inquiries/{ANY_ID}", json={"contact": {"email": "buyer@example.com"}}),
@@ -38,10 +33,5 @@ VISITOR_STUBS = [
 ]
 
 ADMIN_STUBS = [
-    ApiCase("GET", "/api/admin/documents"),
-    ApiCase("POST", "/api/admin/documents", files=MARKDOWN_FILE, data={"title": "Returns"}),
-    ApiCase("GET", f"/api/admin/documents/{ANY_ID}"),
-    ApiCase("POST", f"/api/admin/documents/{ANY_ID}/versions", files=MARKDOWN_FILE),
-    ApiCase("DELETE", f"/api/admin/documents/{ANY_ID}"),
     ApiCase("GET", "/api/admin/inquiries"),
 ]
