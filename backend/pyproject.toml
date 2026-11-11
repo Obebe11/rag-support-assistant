@@ -54,7 +54,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fa
 python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["app", "tests", "scripts", "migrations"]
+files = ["app", "evaluation", "tests", "scripts", "migrations"]
 
 [[tool.mypy.overrides]]
 module = ["pgvector.*"]

@@ -57,6 +57,18 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr | None = None
     llm_model: str | None = None
 
+    llm_input_price_per_million_tokens: float | None = Field(
+        default=None,
+        ge=0,
+        description="Price of one million LLM input tokens in US dollars. Used only by the "
+        "evaluation runner to report API cost; unset means the cost is not computed.",
+    )
+    llm_output_price_per_million_tokens: float | None = Field(
+        default=None,
+        ge=0,
+        description="Price of one million LLM output tokens in US dollars. See the input price.",
+    )
+
     embedding_provider: EmbeddingProviderMode = EmbeddingProviderMode.LOCAL
     embedding_base_url: str | None = None
     embedding_api_key: SecretStr | None = None
