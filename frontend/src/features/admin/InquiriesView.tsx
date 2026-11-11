@@ -8,13 +8,13 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 import type { InquiryRead } from "../../api/client";
-import { describeDelivery } from "../inquiry/deliveryStatus";
+import { describeDelivery, describeFailureReason } from "../inquiry/deliveryStatus";
 import type { DeliveryPhase } from "../inquiry/deliveryStatus";
 import { formatDateTime } from "./format";
 import type { StatusVariant } from "./format";
 import type { AdminInquiries } from "./useAdminInquiries";
 
-const PHASE_VARIANT: Record<DeliveryPhase, StatusVariant> = {
+export const PHASE_VARIANT: Record<DeliveryPhase, StatusVariant> = {
   queued: "info",
   sending: "info",
   retrying: "warning",
@@ -22,7 +22,7 @@ const PHASE_VARIANT: Record<DeliveryPhase, StatusVariant> = {
   failed: "error",
 };
 
-function kindLabel(inquiry: InquiryRead): string {
+export function kindLabel(inquiry: InquiryRead): string {
   return inquiry.kind === "handoff" ? "Human handoff" : "Purchase";
 }
 
@@ -55,35 +55,56 @@ function Request({ inquiry }: { inquiry: InquiryRead }) {
   );
 }
 
-/** Delivery status with the error; a simulated delivery is never shown as delivered to a CRM. */
-function Delivery({ inquiry }: { inquiry: InquiryRead }) {
+/** Badge variant and label of a delivery; a simulated delivery never reads as delivered to a CRM. */
+export function deliveryBadge(inquiry: InquiryRead): { label: string; variant: StatusVariant } {
+  const delivery = inquiry.delivery ?? null;
+  const view = describeDelivery(delivery, inquiry.kind);
+  const simulatedDone = view.phase === "delivered" && delivery !== null && !delivery.live;
+  // The visitor wording "Not delivered" is the admin's "Delivery failed".
+  const label = view.phase === "failed" && delivery?.live ? "Delivery failed" : view.label;
+  return { label, variant: simulatedDone ? "warning" : PHASE_VARIANT[view.phase] };
+}
+
+/** Delivery status with the technical error, and the way to the attempt log. */
+function Delivery({ inquiry, onOpenLog }: { inquiry: InquiryRead; onOpenLog: (inquiry: InquiryRead) => void }) {
   if (inquiry.status !== "confirmed") {
     return <span className="text-muted-foreground">Not confirmed</span>;
   }
   const delivery = inquiry.delivery ?? null;
-  const view = describeDelivery(delivery, inquiry.kind);
-  const simulatedDone = view.phase === "delivered" && delivery !== null && !delivery.live;
+  const badge = deliveryBadge(inquiry);
   const attempts = delivery?.attempt_count ?? 0;
-  const showError = delivery?.last_error && (view.phase === "failed" || view.phase === "retrying");
+  const unfinished = delivery?.status === "failed" || (delivery?.status === "pending" && attempts > 0);
+  const reason = delivery ? describeFailureReason(delivery) : null;
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
-      <Badge variant={simulatedDone ? "warning" : PHASE_VARIANT[view.phase]}>{view.label}</Badge>
+      <Badge variant={badge.variant}>{badge.label}</Badge>
       {attempts > 0 ? (
         <span className="text-xs text-muted-foreground tabular-nums">
           {attempts === 1 ? "1 attempt" : `${attempts} attempts`}
-          {delivery && !delivery.live && !simulatedDone ? ", simulated CRM" : ""}
+          {delivery && !delivery.live && delivery.status !== "delivered" ? ", simulated CRM" : ""}
         </span>
       ) : null}
-      {showError ? (
-        <p className="m-0 max-w-64 text-xs whitespace-normal text-destructive-foreground [overflow-wrap:anywhere]">
+      {reason ? (
+        <p className="m-0 max-w-72 text-xs whitespace-normal text-muted-foreground">{reason}</p>
+      ) : null}
+      {unfinished && delivery?.last_error ? (
+        <p className="m-0 max-w-72 text-xs whitespace-normal text-destructive-foreground [overflow-wrap:anywhere]">
           {delivery.last_error}
         </p>
       ) : null}
+      <Button variant="ghost" size="xs" className="-ml-1.5" onClick={() => onOpenLog(inquiry)}>
+        Delivery log
+        <span className="sr-only"> for {inquiry.contact.name ?? kindLabel(inquiry)}</span>
+      </Button>
     </div>
   );
 }
 
-export function InquiriesView(props: { inquiries: AdminInquiries; compact: boolean }) {
+export function InquiriesView(props: {
+  inquiries: AdminInquiries;
+  compact: boolean;
+  onOpenLog: (inquiry: InquiryRead) => void;
+}) {
   const { inquiries } = props;
 
   if (inquiries.status === "loading") {
@@ -151,7 +172,7 @@ export function InquiriesView(props: { inquiries: AdminInquiries; compact: boole
               <div className="flex gap-3">
                 <dt className="w-20 shrink-0 text-muted-foreground">Delivery</dt>
                 <dd className="m-0 min-w-0 flex-1">
-                  <Delivery inquiry={inquiry} />
+                  <Delivery inquiry={inquiry} onOpenLog={props.onOpenLog} />
                 </dd>
               </div>
             </dl>
@@ -186,7 +207,7 @@ export function InquiriesView(props: { inquiries: AdminInquiries; compact: boole
               <Request inquiry={inquiry} />
             </TableCell>
             <TableCell className="align-top whitespace-normal">
-              <Delivery inquiry={inquiry} />
+              <Delivery inquiry={inquiry} onOpenLog={props.onOpenLog} />
             </TableCell>
           </TableRow>
         ))}

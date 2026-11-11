@@ -18,18 +18,26 @@ export function describeDemoModes(providers: ProviderModes): string[] {
   return notes;
 }
 
+/** True when the CRM access check failed; the server then reports `status: degraded`. */
+export function crmAccessFailed(health: HealthResponse): boolean {
+  return health.providers.crm.access?.state === "failed";
+}
+
 export interface ModeRow {
   name: string;
   value: string;
-  live: boolean;
+  tone: "live" | "demo" | "error";
 }
 
 /** The three providers as short rows for the sidebar. */
 export function modeRows(health: HealthResponse): ModeRow[] {
   const { llm, embeddings, crm } = health.providers;
+  const tone = (live: boolean): ModeRow["tone"] => (live ? "live" : "demo");
   return [
-    { name: "Answers", value: llm.live ? "Live model" : "Local mode", live: llm.live },
-    { name: "Search", value: embeddings.live ? "Embedding API" : "Local mode", live: embeddings.live },
-    { name: "CRM", value: crm.live ? "Connected" : "Simulated", live: crm.live },
+    { name: "Answers", value: llm.live ? "Live model" : "Local mode", tone: tone(llm.live) },
+    { name: "Search", value: embeddings.live ? "Embedding API" : "Local mode", tone: tone(embeddings.live) },
+    crmAccessFailed(health)
+      ? { name: "CRM", value: "Access failed", tone: "error" }
+      : { name: "CRM", value: crm.live ? "Connected" : "Simulated", tone: tone(crm.live) },
   ];
 }

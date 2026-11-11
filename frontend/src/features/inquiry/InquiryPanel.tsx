@@ -257,8 +257,6 @@ function DeliveryStatusView(props: { flow: InquiryFlow }) {
   const { flow } = props;
   const view = describeDelivery(flow.delivery, flow.kind);
   const attempts = flow.delivery?.attempt_count ?? 0;
-  const lastError = flow.delivery?.last_error ?? null;
-  const showError = lastError !== null && (view.phase === "failed" || view.phase === "retrying");
   // A simulated delivery that "arrived" is still not a delivery: no success color.
   const simulatedDone = view.phase === "delivered" && flow.delivery !== null && !flow.delivery.live;
 
@@ -282,13 +280,6 @@ function DeliveryStatusView(props: { flow: InquiryFlow }) {
           ) : null}
         </div>
       </div>
-
-      {showError ? (
-        <div className="flex flex-col gap-1 text-sm">
-          <p className="m-0 text-xs font-medium text-muted-foreground">Last error</p>
-          <p className="m-0 text-foreground [overflow-wrap:anywhere]">{lastError}</p>
-        </div>
-      ) : null}
 
       {flow.statusStale ? (
         <p className="m-0 text-xs text-muted-foreground" role="status">

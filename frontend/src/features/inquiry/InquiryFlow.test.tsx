@@ -3,7 +3,7 @@ import type { UserEvent } from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 
-import { CRM_TIMEOUT_ERROR } from "../../mocks/fixtures";
+import { CRM_REJECTED_ERROR, CRM_TIMEOUT_ERROR } from "../../mocks/fixtures";
 import { setMockScenario } from "../../mocks/handlers";
 import { renderApp } from "../../test/render";
 import { server, useMockApi } from "../../test/server";
@@ -228,8 +228,9 @@ describe("Purchase inquiry", () => {
 
     expect(await panel().findByText("Retrying")).toBeVisible();
     expect(panel().getByText(/The next attempt starts automatically\./)).toBeVisible();
-    expect(panel().getByText(CRM_TIMEOUT_ERROR)).toBeVisible();
     expect(panel().queryByRole("button", { name: "Send again" })).not.toBeInTheDocument();
+    // The technical error text is for the admin view only.
+    expect(document.body).not.toHaveTextContent(CRM_TIMEOUT_ERROR);
   });
 
   it("shows a failed delivery with its error and sends again on request", async () => {
@@ -241,14 +242,110 @@ describe("Purchase inquiry", () => {
     await user.click(panel().getByRole("button", { name: "Confirm and send" }));
 
     expect(await panel().findByText("Simulated delivery failed")).toBeVisible();
-    expect(panel().getByText(CRM_TIMEOUT_ERROR)).toBeVisible();
+    expect(
+      panel().getByText("Your inquiry is saved, but it was not delivered after 3 attempts. You can send it again."),
+    ).toBeVisible();
     expect(within(conversation()).getByText("Simulated delivery failed")).toBeVisible();
+    // The technical error text is for the admin view only.
+    expect(document.body).not.toHaveTextContent(CRM_TIMEOUT_ERROR);
 
     await user.dblClick(panel().getByRole("button", { name: "Send again" }));
 
     expect(await panel().findByText("Delivery simulated")).toBeVisible();
     expect(retries.count).toBe(1);
     expect(panel().queryByRole("button", { name: "Send again" })).not.toBeInTheDocument();
+  });
+
+  it("explains a delivery the CRM rejected without the technical error", async () => {
+    setMockScenario({ health: "live", delivery: "reject" });
+    const { user } = renderApp("/");
+    await reviewPurchase(user);
+
+    await user.click(panel().getByRole("button", { name: "Confirm and send" }));
+
+    expect(await panel().findByText("Not delivered")).toBeVisible();
+    expect(panel().getByText(/it may fail the same way until the problem is fixed on our side/)).toBeVisible();
+    expect(panel().getByRole("button", { name: "Send again" })).toBeVisible();
+    expect(document.body).not.toHaveTextContent(CRM_REJECTED_ERROR);
+  });
+
+  it("follows the email tags of the simulated CRM", async () => {
+    const { user } = renderApp("/");
+    await startPurchase(user);
+    await user.type(panel().getByLabelText("Timeline"), "Within 4 weeks");
+    await user.type(panel().getByLabelText("Name"), "Dana Whitfield");
+    await user.type(panel().getByLabelText("Email"), "dana+fail@example.com");
+    await user.click(panel().getByRole("button", { name: "Review inquiry" }));
+    await user.click(await panel().findByRole("button", { name: "Confirm and send" }));
+
+    expect(await panel().findByText("Simulated delivery failed")).toBeVisible();
+  });
+
+  it("returns to the form when the server finds the inquiry incomplete on confirmation", async () => {
+    const { user } = renderApp("/");
+    await reviewPurchase(user);
+    server.use(
+      http.post("*/api/inquiries/:id/confirm", () =>
+        HttpResponse.json(
+          {
+            error: {
+              code: "validation_error",
+              message: "The inquiry is incomplete. Fill in the missing fields before confirming.",
+              details: [{ field: "timeline", message: "This field is required." }],
+            },
+          },
+          { status: 422 },
+        ),
+      ),
+    );
+
+    await user.click(panel().getByRole("button", { name: "Confirm and send" }));
+
+    expect(await panel().findByRole("heading", { name: "Purchase inquiry" })).toBeVisible();
+    expect(panel().getByLabelText("Timeline")).toHaveAccessibleDescription(
+      expect.stringContaining("Enter when you need the order."),
+    );
+  });
+
+  it("shows the delivery status when the inquiry was already confirmed elsewhere", async () => {
+    const { user } = renderApp("/");
+    await reviewPurchase(user);
+    // Another tab changed the draft: saving answers 409 and the server state wins.
+    server.use(
+      http.post("*/api/inquiries/:id/confirm", () =>
+        HttpResponse.json(
+          { error: { code: "conflict", message: "The inquiry is in another state.", details: [] } },
+          { status: 409 },
+        ),
+      ),
+      http.get("*/api/inquiries/:id", ({ params }) =>
+        HttpResponse.json({
+          id: String(params.id),
+          status: "confirmed",
+          kind: "purchase",
+          product: "Northline P-240 Monochrome Laser Printer",
+          quantity: 20,
+          timeline: "Within 4 weeks",
+          contact: { name: "Dana Whitfield", email: "dana.whitfield@example.com", company: null, phone: null },
+          notes: null,
+          missing_fields: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          delivery: {
+            status: "delivered",
+            crm_mode: "simulated",
+            live: false,
+            attempt_count: 1,
+            attempts: [],
+          },
+        }),
+      ),
+    );
+
+    await user.click(panel().getByRole("button", { name: "Confirm and send" }));
+
+    expect(await panel().findByText("Delivery simulated")).toBeVisible();
+    expect(panel().queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("keeps the preview and explains when confirmation fails", async () => {

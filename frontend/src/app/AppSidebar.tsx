@@ -60,7 +60,10 @@ function DemoStatus() {
         <div key={row.name} className="flex h-9 items-center gap-2.5 px-2.5 text-sm">
           <span
             aria-hidden
-            className={cn("size-1.5 shrink-0 rounded-full", row.live ? "bg-success" : "bg-warning")}
+            className={cn(
+              "size-1.5 shrink-0 rounded-full",
+              row.tone === "live" ? "bg-success" : row.tone === "error" ? "bg-destructive" : "bg-warning",
+            )}
           />
           <dt className="shrink-0 text-sidebar-foreground">{row.name}</dt>
           <dd className="m-0 min-w-0 flex-1 truncate text-right text-muted-foreground">{row.value}</dd>

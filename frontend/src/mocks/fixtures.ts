@@ -28,7 +28,15 @@ export const demoHealth: HealthResponse = {
   providers: {
     llm: { mode: "local", live: false, model: null },
     embeddings: { mode: "local", live: false, model: null },
-    crm: { mode: "simulated", live: false },
+    crm: {
+      mode: "simulated",
+      live: false,
+      access: {
+        state: "ok",
+        message: "Simulated CRM: no external account is checked or written to.",
+        checked_at: NOW,
+      },
+    },
   },
 };
 
@@ -39,7 +47,23 @@ export const liveHealth: HealthResponse = {
   providers: {
     llm: { mode: "openai_compatible", live: true, model: "example-chat-model" },
     embeddings: { mode: "openai_compatible", live: true, model: "example-embedding-model" },
-    crm: { mode: "hubspot", live: true },
+    crm: {
+      mode: "hubspot",
+      live: true,
+      access: { state: "ok", message: "The CRM account, its permissions and fields were checked.", checked_at: NOW },
+    },
+  },
+};
+
+export const CRM_ACCESS_ERROR = "The CRM rejected the access token (401).";
+
+/** Live providers, but the CRM access check failed: the overall status is degraded. */
+export const crmAccessFailedHealth: HealthResponse = {
+  ...liveHealth,
+  status: "degraded",
+  providers: {
+    ...liveHealth.providers,
+    crm: { mode: "hubspot", live: true, access: { state: "failed", message: CRM_ACCESS_ERROR, checked_at: NOW } },
   },
 };
 
@@ -304,6 +328,7 @@ export function deliveryFixture(overrides: Partial<DeliveryRead> = {}): Delivery
     crm_mode: "simulated",
     live: false,
     attempt_count: 0,
+    failure_reason: null,
     last_error: null,
     last_attempt_at: null,
     next_attempt_at: null,
@@ -371,12 +396,14 @@ export const deliveryDelivered = (live = false): DeliveryRead =>
     ],
   });
 
+/** No automatic attempt is left: every one hit a temporary error. */
 export const deliveryFailed = (live = false): DeliveryRead =>
   deliveryFixture({
     status: "failed",
     live,
     crm_mode: live ? "hubspot" : "simulated",
     attempt_count: 3,
+    failure_reason: "attempts_exhausted",
     last_error: CRM_TIMEOUT_ERROR,
     last_attempt_at: NOW,
     attempts: [1, 2, 3].map((attempt_number) => ({
@@ -386,6 +413,23 @@ export const deliveryFailed = (live = false): DeliveryRead =>
       started_at: NOW,
       finished_at: NOW,
     })),
+  });
+
+export const CRM_REJECTED_ERROR = "The CRM rejected the request (403: missing scope).";
+
+/** The CRM rejected the request: failed at once, without automatic retries. */
+export const deliveryRejected = (live = false): DeliveryRead =>
+  deliveryFixture({
+    status: "failed",
+    live,
+    crm_mode: live ? "hubspot" : "simulated",
+    attempt_count: 1,
+    failure_reason: "permanent_error",
+    last_error: CRM_REJECTED_ERROR,
+    last_attempt_at: NOW,
+    attempts: [
+      { attempt_number: 1, outcome: "failed", error: CRM_REJECTED_ERROR, started_at: NOW, finished_at: NOW },
+    ],
   });
 
 // --- Documents --------------------------------------------------------------
@@ -568,6 +612,18 @@ export function adminInquiryFixtures(): InquiryRead[] {
       confirmed_at: "2026-11-11T09:20:00Z",
       updated_at: "2026-11-11T09:20:00Z",
       delivery: deliveryRetrying(false),
+    }),
+    inquiryFixture({
+      id: "c3c00000-0000-4000-8000-000000000015",
+      status: "confirmed",
+      product: "Northline LP-420 Label Printer",
+      quantity: 2,
+      timeline: "This month",
+      contact: { name: "Tomas Eklund", email: "tomas.eklund@example.com", company: null, phone: null },
+      missing_fields: [],
+      confirmed_at: "2026-11-11T09:05:00Z",
+      updated_at: "2026-11-11T09:05:00Z",
+      delivery: deliveryRejected(false),
     }),
     inquiryFixture({ ...offeredDraft(), id: "c3c00000-0000-4000-8000-000000000014" }),
   ];

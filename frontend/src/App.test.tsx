@@ -1,6 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { CRM_ACCESS_ERROR } from "./mocks/fixtures";
 import { setMockScenario } from "./mocks/handlers";
 import { renderApp } from "./test/render";
 import { useMockApi } from "./test/server";
@@ -71,6 +72,18 @@ describe("Demo modes", () => {
 
     expect(await screen.findByRole("button", { name: "Demo mode" })).toBeVisible();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("reports a failed CRM access check without the technical message", async () => {
+    setMockScenario({ health: "crm-failed" });
+    const { user } = renderApp("/");
+
+    const status = await screen.findByRole("region", { name: "Demo status" });
+    expect(await within(status).findByText("Access failed")).toBeVisible();
+
+    await user.click(await screen.findByRole("button", { name: "CRM access failed" }));
+    expect(await screen.findByText(/Confirmed inquiries are saved and stay queued/)).toBeVisible();
+    expect(document.body).not.toHaveTextContent(CRM_ACCESS_ERROR);
   });
 
   it("reports an unavailable database", async () => {

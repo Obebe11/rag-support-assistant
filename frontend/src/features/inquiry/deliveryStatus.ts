@@ -72,11 +72,25 @@ export function describeDelivery(delivery: DeliveryRead | null, kind: InquiryKin
     case "failed":
       return {
         phase,
-        label: simulated ? "Simulated delivery failed" : "Delivery failed",
+        label: simulated ? "Simulated delivery failed" : "Not delivered",
+        // The technical error (`last_error`) is for the admin view, not for the visitor.
         detail:
-          attempts > 1
-            ? `Your ${noun(kind)} is saved, but it was not delivered after ${attempts} attempts.`
-            : `Your ${noun(kind)} is saved, but it was not delivered.`,
+          delivery?.failure_reason === "permanent_error"
+            ? `Your ${noun(kind)} is saved, but it could not be delivered. You can send it again; it may fail the same way until the problem is fixed on our side.`
+            : `Your ${noun(kind)} is saved, but it was not delivered${attempts > 1 ? ` after ${attempts} attempts` : ""}. You can send it again.`,
       };
+  }
+}
+
+/** Why a delivery stopped, in words for the admin list. */
+export function describeFailureReason(delivery: DeliveryRead): string | null {
+  if (delivery.status !== "failed") return null;
+  switch (delivery.failure_reason) {
+    case "permanent_error":
+      return "The CRM rejected the request. A retry fails the same way until the cause is fixed.";
+    case "attempts_exhausted":
+      return "No automatic attempt is left. Each one hit a temporary error.";
+    default:
+      return null;
   }
 }

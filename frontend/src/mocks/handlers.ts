@@ -25,11 +25,13 @@ import type {
 import {
   adminInquiryFixtures,
   clarificationReply,
+  crmAccessFailedHealth,
   databaseDownHealth,
   deliveryDelivered,
   deliveryFailed,
   deliveryInProgress,
   deliveryQueued,
+  deliveryRejected,
   deliveryRetrying,
   demoHealth,
   documentFixtures,
@@ -49,15 +51,17 @@ import {
 /** The admin token the mock accepts. */
 export const MOCK_ADMIN_TOKEN = "demo-admin-token";
 
-type DeliveryStep = "queued" | "in_progress" | "retrying" | "delivered" | "failed";
+type DeliveryStep = "queued" | "in_progress" | "retrying" | "delivered" | "failed" | "rejected";
 
 const DELIVERY_PLANS = {
   /** Queued, sent, delivered. */
   success: ["queued", "in_progress", "delivered"],
   /** One failed attempt, an automatic retry, then delivered. */
   retry: ["queued", "in_progress", "retrying", "in_progress", "delivered"],
-  /** Every automatic attempt fails; a manual retry then succeeds. */
+  /** Every automatic attempt fails with a temporary error; a manual retry then succeeds. */
   fail: ["queued", "in_progress", "retrying", "in_progress", "failed"],
+  /** The CRM rejects the request: failed at once; a manual retry then succeeds. */
+  reject: ["queued", "in_progress", "rejected"],
   /** Stays queued. */
   queued: ["queued"],
   /** Stays in the automatic retry wait. */
@@ -66,7 +70,7 @@ const DELIVERY_PLANS = {
 
 export interface MockScenario {
   /** What `GET /api/health` reports. `offline` fails every request at the network level. */
-  health: "demo" | "live" | "db-down" | "offline";
+  health: "demo" | "live" | "db-down" | "crm-failed" | "offline";
   /** How a confirmed inquiry is delivered. Each status request advances one step. */
   delivery: keyof typeof DELIVERY_PLANS;
   /** `error` answers a chat message with 500; `offline` fails it at the network level. */
@@ -129,7 +133,27 @@ function errorResponse(status: number, code: ErrorCode, message: string, details
 const notFound = (what: string) => errorResponse(404, "not_found", `${what} was not found.`);
 
 function crmIsLive(): boolean {
-  return state.scenario.health === "live";
+  return state.scenario.health === "live" || state.scenario.health === "crm-failed";
+}
+
+/**
+ * The simulated CRM of the real backend fails on purpose for tagged contact
+ * emails (see `docs/inquiries.md`). The mock follows the same tags, so a demo
+ * script works with and without the backend.
+ */
+function planForEmail(email: string | null | undefined): keyof typeof DELIVERY_PLANS | null {
+  const tag = /\+(fail2|fail|reject1|reject)@/.exec(email ?? "")?.[1];
+  switch (tag) {
+    case "fail2":
+      return "retry";
+    case "fail":
+      return "fail";
+    case "reject1":
+    case "reject":
+      return "reject";
+    default:
+      return null;
+  }
 }
 
 async function pace(): Promise<Response | null> {
@@ -211,6 +235,8 @@ function deliveryAt(delivery: MockDelivery): DeliveryRead {
       return { ...deliveryDelivered(live), attempt_count: Math.max(attemptsBefore, 1) };
     case "failed":
       return deliveryFailed(live);
+    case "rejected":
+      return deliveryRejected(live);
     default:
       return deliveryQueued(live);
   }
@@ -377,6 +403,7 @@ export const handlers = [
       demo: demoHealth,
       live: liveHealth,
       "db-down": databaseDownHealth,
+      "crm-failed": crmAccessFailedHealth,
     };
     return HttpResponse.json(bodies[state.scenario.health as keyof typeof bodies]);
   }),
@@ -483,20 +510,20 @@ export const handlers = [
     if (failure) return failure;
     const inquiry = state.inquiries.get(String(params.id));
     if (!inquiry) return notFound("The inquiry");
-    if (inquiry.status !== "draft") {
-      return errorResponse(409, "conflict", "This inquiry is already confirmed.");
-    }
+    // Confirming again returns the same inquiry and queues nothing.
+    if (inquiry.status !== "draft") return HttpResponse.json(inquiryWithDelivery(inquiry));
     if (inquiry.missing_fields && inquiry.missing_fields.length > 0) {
       return errorResponse(
-        409,
-        "conflict",
-        "The inquiry is missing required fields.",
+        422,
+        "validation_error",
+        "The inquiry is incomplete. Fill in the missing fields before confirming.",
         inquiry.missing_fields.map((field) => ({ field, message: "This field is required." })),
       );
     }
     const confirmed: InquiryRead = { ...inquiry, status: "confirmed", confirmed_at: now(), updated_at: now() };
     state.inquiries.set(confirmed.id, confirmed);
-    state.deliveries.set(confirmed.id, { plan: DELIVERY_PLANS[state.scenario.delivery], step: 0 });
+    const plan = planForEmail(confirmed.contact.email) ?? state.scenario.delivery;
+    state.deliveries.set(confirmed.id, { plan: DELIVERY_PLANS[plan], step: 0 });
     return HttpResponse.json(inquiryWithDelivery(confirmed));
   }),
 

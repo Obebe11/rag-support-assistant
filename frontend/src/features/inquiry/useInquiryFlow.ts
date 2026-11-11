@@ -216,14 +216,24 @@ export function useInquiryFlow(options: InquiryFlowOptions): InquiryFlow {
       );
       showStatus(confirmed);
     } catch (caught) {
-      // 409: already confirmed (for example in another tab) or a required field is empty.
+      // 422: a required field is still empty; the details name the fields.
+      if (caught instanceof ApiError && caught.status === 422) {
+        const missing = Object.keys(errorsFromDetails(caught.details)) as InquiryField[];
+        const visible = missing.filter((field) => FIELDS_BY_KIND[kind].includes(field));
+        if (visible.length > 0) {
+          setErrors(errorsFromMissingFields(kind, visible));
+          setStep("form");
+          return;
+        }
+      }
+      // 409: the server holds another state of this inquiry; show that state.
       if (caught instanceof ApiError && caught.status === 409 && (await resync(inquiryId))) return;
       setError(describeError(caught));
     } finally {
       lockRef.current = false;
       setBusy(null);
     }
-  }, [inquiryId, resync, showStatus]);
+  }, [inquiryId, kind, resync, showStatus]);
 
   const retryDelivery = useCallback(async () => {
     if (lockRef.current || inquiryId === null) return;
