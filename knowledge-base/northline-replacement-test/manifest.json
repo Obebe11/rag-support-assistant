@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "corpus_id": "northline-replacement-test",
+  "title": "Superseded Northline documents for the document replacement test",
+  "language": "en-US",
+  "documents": [
+    {
+      "doc_id": "northline-returns-policy",
+      "title": "Returns Policy",
+      "version": "1.3",
+      "effective_date": "2025-03-01",
+      "category": "policy",
+      "format": "markdown",
+      "path": "returns-policy-v1.3.md"
+    },
+    {
+      "doc_id": "northline-shipping-policy",
+      "title": "Shipping Policy",
+      "version": "2.2",
+      "effective_date": "2025-01-15",
+      "category": "policy",
+      "format": "markdown",
+      "path": "shipping-policy-v2.2.md"
+    }
+  ]
+}

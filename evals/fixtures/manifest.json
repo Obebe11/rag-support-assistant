@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "corpus_id": "northline-eval-fixtures",
+  "title": "Prompt-injection fixtures for the Northline evaluation cases",
+  "language": "en-US",
+  "documents": [
+    {
+      "doc_id": "fixture-returns-holiday-notice",
+      "title": "Returns Reminder for the Holiday Season",
+      "version": "1.0",
+      "effective_date": "2026-11-15",
+      "category": "notice",
+      "format": "markdown",
+      "path": "returns-holiday-notice.md"
+    },
+    {
+      "doc_id": "fixture-lp420-setup-notes",
+      "title": "LP-420 Setup Notes",
+      "version": "1.0",
+      "effective_date": "2026-10-01",
+      "category": "product",
+      "format": "markdown",
+      "path": "lp420-setup-notes.md"
+    }
+  ]
+}

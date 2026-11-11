@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "corpus_id": "northline",
+  "title": "Northline Office Equipment knowledge base",
+  "language": "en-US",
+  "documents": [
+    {
+      "doc_id": "northline-faq",
+      "title": "Frequently Asked Questions",
+      "version": "2.3",
+      "effective_date": "2026-09-01",
+      "category": "faq",
+      "format": "markdown",
+      "path": "documents/faq.md"
+    },
+    {
+      "doc_id": "northline-shipping-policy",
+      "title": "Shipping Policy",
+      "version": "3.0",
+      "effective_date": "2026-06-01",
+      "category": "policy",
+      "format": "markdown",
+      "path": "documents/shipping-policy.md"
+    },
+    {
+      "doc_id": "northline-returns-policy",
+      "title": "Returns Policy",
+      "version": "2.0",
+      "effective_date": "2026-09-01",
+      "category": "policy",
+      "format": "markdown",
+      "path": "documents/returns-policy.md"
+    },
+    {
+      "doc_id": "northline-warranty-policy",
+      "title": "Warranty Policy",
+      "version": "4.0",
+      "effective_date": "2026-01-01",
+      "category": "policy",
+      "format": "pdf",
+      "path": "documents/warranty-policy.pdf",
+      "page_count": 3,
+      "source_path": "pdf-source/warranty-policy.md"
+    },
+    {
+      "doc_id": "northline-service-maintenance-guide",
+      "title": "Service and Maintenance Guide",
+      "version": "1.4",
+      "effective_date": "2026-05-01",
+      "category": "service",
+      "format": "pdf",
+      "path": "documents/service-and-maintenance-guide.pdf",
+      "page_count": 4,
+      "source_path": "pdf-source/service-and-maintenance-guide.md"
+    },
+    {
+      "doc_id": "northline-ordering-payment-terms",
+      "title": "Ordering and Payment Terms",
+      "version": "2.1",
+      "effective_date": "2026-04-01",
+      "category": "policy",
+      "format": "markdown",
+      "path": "documents/ordering-and-payment-terms.md"
+    },
+    {
+      "doc_id": "northline-volume-orders-quotes",
+      "title": "Volume Orders and Quotes",
+      "version": "1.2",
+      "effective_date": "2026-04-01",
+      "category": "sales",
+      "format": "markdown",
+      "path": "documents/volume-orders-and-quotes.md"
+    },
+    {
+      "doc_id": "northline-contact-support-hours",
+      "title": "Contact and Support Hours",
+      "version": "1.5",
+      "effective_date": "2026-08-01",
+      "category": "contact",
+      "format": "markdown",
+      "path": "documents/contact-and-support-hours.md"
+    },
+    {
+      "doc_id": "northline-product-p240",
+      "title": "Northline P-240 Monochrome Laser Printer",
+      "version": "1.2",
+      "effective_date": "2026-03-01",
+      "category": "product",
+      "format": "markdown",
+      "path": "documents/product-p240-laser-printer.md"
+    },
+    {
+      "doc_id": "northline-product-c360",
+      "title": "Northline C-360 Color Multifunction Printer",
+      "version": "1.1",
+      "effective_date": "2026-03-01",
+      "category": "product",
+      "format": "pdf",
+      "path": "documents/product-c360-color-mfp.pdf",
+      "page_count": 3,
+      "source_path": "pdf-source/product-c360-color-mfp.md"
+    },
+    {
+      "doc_id": "northline-product-s300",
+      "title": "Northline S-300 Cross-Cut Shredder",
+      "version": "1.1",
+      "effective_date": "2026-02-01",
+      "category": "product",
+      "format": "markdown",
+      "path": "documents/product-s300-shredder.md"
+    },
+    {
+      "doc_id": "northline-product-l125",
+      "title": "Northline L-125 Thermal Laminator",
+      "version": "1.0",
+      "effective_date": "2026-02-01",
+      "category": "product",
+      "format": "markdown",
+      "path": "documents/product-l125-laminator.md"
+    },
+    {
+      "doc_id": "northline-product-lp420",
+      "title": "Northline LP-420 Thermal Label Printer",
+      "version": "1.1",
+      "effective_date": "2026-03-01",
+      "category": "product",
+      "format": "markdown",
+      "path": "documents/product-lp420-label-printer.md"
+    }
+  ]
+}

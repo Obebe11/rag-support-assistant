@@ -1,0 +1,805 @@
+{
+  "schema_version": 1,
+  "category": "answerable",
+  "cases": [
+    {
+      "id": "ans-01",
+      "category": "answerable",
+      "title": "Return window",
+      "topics": ["returns"],
+      "turns": [
+        {
+          "user": "How long do I have to return an item I bought from you?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "You can return most items within 30 days of the delivery date. Every return needs an RMA number, which you can request on the Orders page of the account portal or from returns@northline.example.com.",
+            "must_include": [
+              {
+                "fact": "The return window is 30 days from the delivery date.",
+                "match_any": ["30 days", "30-day", "thirty days"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Gives the 45-day window from the superseded version 1.3 of the Returns Policy.",
+                "match_any": ["45 days", "45-day"]
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Return window",
+                "quote": "You can return most items within 30 days of the delivery date."
+              },
+              {
+                "doc_id": "northline-faq",
+                "section": "How long do I have to return an item?",
+                "quote": "You have 30 days from the delivery date."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-02",
+      "category": "answerable",
+      "title": "Restocking fee for an opened item",
+      "topics": ["returns"],
+      "turns": [
+        {
+          "user": "If I open the box and then decide I don't want the laminator, do I get all of my money back?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Not all of it. An opened item in like-new condition, with all accessories, manuals and packaging, is refunded at the item price less a 15% restocking fee. For a change-of-mind return you also pay the return shipping, and the original shipping charge is not refunded.",
+            "must_include": [
+              {
+                "fact": "An opened item in like-new condition is refunded less a 15% restocking fee.",
+                "match_any": ["15%", "15 percent"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says an opened change-of-mind return receives a refund with no deduction."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Item condition and refund amount",
+                "quote": "Opened, in like-new condition with all accessories, manuals and packaging | Item price less a 15% restocking fee"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-03",
+      "category": "answerable",
+      "title": "Refund timing and method",
+      "topics": ["returns"],
+      "turns": [
+        {
+          "user": "Once you receive my return, how soon will I get the refund, and how is it paid?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "The refund is issued to the original payment method within 7 business days after the return arrives at the returns center. If the order was paid on a Net 30 credit account, Northline applies a credit memo to the account instead. You get an email confirmation when the refund is issued.",
+            "must_include": [
+              {
+                "fact": "The refund is issued within 7 business days after the return arrives at the returns center.",
+                "match_any": ["7 business days", "seven business days"]
+              },
+              {
+                "fact": "The refund goes to the original payment method.",
+                "match_any": ["original payment method", "original method of payment", "same payment method", "paid with"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Refunds",
+                "quote": "We issue the refund to the original payment method within 7 business days after the return arrives at our returns center."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-04",
+      "category": "answerable",
+      "title": "Standard Ground rate and free shipping threshold",
+      "topics": ["shipping"],
+      "turns": [
+        {
+          "user": "What does standard shipping cost, and is there an order value where it becomes free?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Standard Ground shipping costs $14.95 per order and takes 3 to 5 business days. It is free when the merchandise subtotal is $500 or more for delivery within the 48 contiguous states.",
+            "must_include": [
+              {
+                "fact": "Standard Ground shipping costs $14.95 per order.",
+                "match_any": ["$14.95", "14.95"]
+              },
+              {
+                "fact": "Standard Ground shipping is free on orders of $500 or more.",
+                "match_any": ["$500", "500 dollars"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Gives the $750 threshold or the $12.95 rate from the superseded version 2.2 of the Shipping Policy.",
+                "match_any": ["$750", "$12.95"]
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-shipping-policy",
+                "section": "Parcel shipping methods and rates",
+                "quote": "Standard Ground | 3 to 5 business days | $14.95 per order; free on orders of $500 or more"
+              },
+              {
+                "doc_id": "northline-faq",
+                "section": "How much does shipping cost?",
+                "quote": "Standard Ground shipping costs $14.95 per order and is free on orders of $500 or more delivered within the 48 contiguous states."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-05",
+      "category": "answerable",
+      "title": "Same-day shipping cut-off",
+      "topics": ["shipping"],
+      "turns": [
+        {
+          "user": "What is the latest time I can place an order and still have it ship the same day?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "In-stock orders placed by 2:00 p.m. Pacific Time on a business day ship the same day. Next-Day Air orders have an earlier cut-off of 12:00 noon Pacific Time. Orders placed later, on a weekend or on a company holiday ship the next business day.",
+            "must_include": [
+              {
+                "fact": "The same-day cut-off is 2:00 p.m.",
+                "match_any": ["2:00 p.m.", "2 p.m.", "2:00 pm", "2 pm", "2:00pm", "2pm"]
+              },
+              {
+                "fact": "The cut-off is in Pacific Time.",
+                "match_any": ["pacific"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-shipping-policy",
+                "section": "Order processing",
+                "quote": "In-stock orders placed by 2:00 p.m. Pacific Time on a business day ship the same day."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-06",
+      "category": "answerable",
+      "title": "Reporting a shipment damaged in transit",
+      "topics": ["shipping"],
+      "turns": [
+        {
+          "user": "Our order arrived with a crushed box and the printer inside is cracked. What should we do?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Report the damage to Customer Support within 5 business days of delivery. Include the order number and photos of the item and its packaging, and keep the packaging until the claim is resolved. For problems reported within 5 business days, Northline ships a replacement or issues a refund at no cost to you and pays for return shipping.",
+            "must_include": [
+              {
+                "fact": "Damage must be reported within 5 business days of delivery.",
+                "match_any": ["5 business days", "five business days"]
+              },
+              {
+                "fact": "The report should include photos of the item and its packaging.",
+                "match_any": ["photo", "picture"]
+              },
+              {
+                "fact": "Northline replaces the item or refunds it at no cost to the customer.",
+                "match_any": ["replacement", "replace", "refund"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says a 15% restocking fee or customer-paid return shipping applies to an item damaged in transit."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-shipping-policy",
+                "section": "Damaged, missing or lost shipments",
+                "quote": "Report damaged, missing or incorrect items to Customer Support within 5 business days of delivery."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-07",
+      "category": "answerable",
+      "title": "L-125 pouch thickness and warm-up time",
+      "topics": ["products"],
+      "turns": [
+        {
+          "user": "What is the thickest pouch the L-125 can take, and how long does it need to warm up?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "The L-125 takes pouches up to 10 mil thick (3, 5, 7 and 10 mil). It needs 4 minutes to warm up.",
+            "must_include": [
+              {
+                "fact": "The thickest supported pouch is 10 mil.",
+                "match_any": ["10 mil", "10-mil"]
+              },
+              {
+                "fact": "The warm-up time is 4 minutes.",
+                "match_any": ["4 minutes", "four minutes", "4-minute"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-product-l125",
+                "section": "Specifications",
+                "quote": "Pouch thickness | 3 mil, 5 mil, 7 mil and 10 mil"
+              },
+              {
+                "doc_id": "northline-product-l125",
+                "section": "Specifications",
+                "quote": "Warm-up time | 4 minutes"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-08",
+      "category": "answerable",
+      "title": "Number of users on one account",
+      "topics": ["accounts"],
+      "turns": [
+        {
+          "user": "How many of our staff can have their own login on our company account?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "One account can have up to 10 users, each with a separate login. The account owner adds users on the Users page of the account portal and chooses who can place orders and who can only view them.",
+            "must_include": [
+              {
+                "fact": "One account can have up to 10 users.",
+                "match_any": ["10 users", "ten users", "up to 10", "up to ten"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-faq",
+                "section": "How many people can use one account?",
+                "quote": "One account can have up to 10 users, each with a separate login."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-09",
+      "category": "answerable",
+      "title": "Third-party toner and the warranty",
+      "topics": ["warranty"],
+      "turns": [
+        {
+          "user": "Will using third-party toner in our P-240 void the warranty?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "No. Using third-party toner does not by itself void the warranty. However, damage or failures caused by third-party supplies are not covered, and repairs for that damage are billed at the out-of-warranty rates.",
+            "must_include": [
+              {
+                "fact": "Using third-party toner does not by itself void the warranty.",
+                "match_any": ["does not by itself void", "does not void", "doesn't void", "not void", "won't void", "will not void"]
+              },
+              {
+                "fact": "Damage or failures caused by third-party supplies are not covered.",
+                "match_any": ["not covered", "isn't covered", "aren't covered", "excluded"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says that any use of third-party toner voids the warranty."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 2,
+                "section": "Third-party supplies",
+                "quote": "Using third-party toner, labels or laminating pouches does not by itself void the warranty. Damage or failures caused by third-party supplies are not covered."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-10",
+      "category": "answerable",
+      "title": "Advance replacement for a P-240",
+      "topics": ["warranty"],
+      "turns": [
+        {
+          "user": "Our P-240 failed four months after delivery. Can you send a replacement before we ship the broken one back?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Yes. Advance replacement is available for the P-240 during the first 12 months of the warranty period. After the Technical Service Desk confirms a hardware fault, Northline ships a replacement unit on the next business day. You need a credit card or a Net 30 credit account on file, and you must ship the defective unit back with the prepaid label within 10 business days of receiving the replacement, or the list price of the replacement is charged.",
+            "must_include": [
+              {
+                "fact": "Advance replacement is available for the P-240 during the first 12 months of the warranty period.",
+                "match_any": ["advance replacement"]
+              },
+              {
+                "fact": "The replacement ships on the next business day.",
+                "match_any": ["next business day"]
+              },
+              {
+                "fact": "The defective unit must be shipped back within 10 business days of receiving the replacement.",
+                "match_any": ["10 business days", "ten business days"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 3,
+                "section": "Advance replacement",
+                "quote": "Advance replacement is available for the P-240 and the LP-420 during the first 12 months of the warranty period."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-11",
+      "category": "answerable",
+      "title": "Northline Care extended coverage for a C-360",
+      "topics": ["warranty"],
+      "turns": [
+        {
+          "user": "Can we extend the warranty on a C-360? What does it cost, and by when do we have to buy it?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Yes. Northline Care extends the warranty period by 1 or 2 years and is available for the C-360. It costs 10% of the list price for 1 additional year or 18% for 2 additional years. With the C-360 list price of $1,249.00, that is $124.90 or $224.82. You must buy it with the equipment or within 60 days of the delivery date.",
+            "must_include": [
+              {
+                "fact": "Extended coverage costs 10% of the list price for 1 additional year.",
+                "match_any": ["10%", "10 percent", "$124.90"]
+              },
+              {
+                "fact": "Extended coverage costs 18% of the list price for 2 additional years.",
+                "match_any": ["18%", "18 percent", "$224.82"]
+              },
+              {
+                "fact": "It must be bought with the equipment or within 60 days of delivery.",
+                "match_any": ["60 days", "sixty days"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 3,
+                "section": "Northline Care extended coverage",
+                "quote": "The price is 10% of the product's list price for 1 additional year, or 18% of the list price for 2 additional years."
+              },
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 3,
+                "section": "Northline Care extended coverage",
+                "quote": "Buy it with the equipment or within 60 days of the delivery date."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-12",
+      "category": "answerable",
+      "title": "Oiling the S-300 shredder",
+      "topics": ["service"],
+      "turns": [
+        {
+          "user": "How often should we oil the S-300, and can we use a regular spray lubricant?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Oil the cutting head after every 30 minutes of total shredding time or every time you empty the bin, whichever comes first. Use Northline shredder oil (NL-OIL12). Do not use aerosol lubricants or petroleum-based oils: they are a fire hazard and can damage the cutting head, and that damage is not covered by the warranty.",
+            "must_include": [
+              {
+                "fact": "Oil the cutting head after every 30 minutes of total shredding time or every time the bin is emptied.",
+                "match_any": ["30 minutes", "thirty minutes"]
+              },
+              {
+                "fact": "Aerosol (spray) lubricants must not be used.",
+                "match_any": ["aerosol", "spray"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says a spray or aerosol lubricant is acceptable."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-service-maintenance-guide",
+                "page": 3,
+                "section": "S-300 Cross-Cut Shredder",
+                "quote": "Oil the cutting head after every 30 minutes of total shredding time or every time you empty the bin, whichever comes first."
+              },
+              {
+                "doc_id": "northline-service-maintenance-guide",
+                "page": 3,
+                "section": "S-300 Cross-Cut Shredder",
+                "quote": "Do not use aerosol lubricants or petroleum-based oils."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-13",
+      "category": "answerable",
+      "title": "Expired L-125 warranty and out-of-warranty repair cost",
+      "topics": ["warranty", "service"],
+      "turns": [
+        {
+          "user": "We bought an L-125 laminator 14 months ago and it has stopped heating. Is it still under warranty, and if not, what would a repair cost?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "The L-125 has a 1-year warranty from the delivery date, so a unit delivered 14 months ago is no longer covered. For an out-of-warranty repair, the diagnostic fee is $65.00 per unit and is credited toward the repair cost if you approve the repair. Labor is billed at $95.00 per hour and parts at list price. You receive a written estimate within 2 business days after the unit arrives at the service center, and you pay for shipping to the service center.",
+            "must_include": [
+              {
+                "fact": "The L-125 warranty period is 1 year, so the unit is out of warranty.",
+                "match_any": ["1 year", "1-year", "one year", "one-year", "12 months"]
+              },
+              {
+                "fact": "The out-of-warranty diagnostic fee is $65.00 and is credited toward an approved repair.",
+                "match_any": ["$65"]
+              },
+              {
+                "fact": "Labor is billed at $95.00 per hour.",
+                "match_any": ["$95"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Applies a 2-year warranty to the L-125.",
+                "match_any": ["2 years", "2-year", "two years", "two-year"]
+              }
+            ],
+            "require_all_sources": true,
+            "sources": [
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 1,
+                "section": "Warranty periods",
+                "quote": "L-125 Thermal Laminator | 1 year"
+              },
+              {
+                "doc_id": "northline-service-maintenance-guide",
+                "page": 1,
+                "section": "Out-of-warranty repair",
+                "quote": "The diagnostic fee is $65.00 per unit. If you approve the repair, the fee is credited toward the repair cost."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-14",
+      "category": "answerable",
+      "title": "Early payment discount and late payment on Net 30",
+      "topics": ["payment"],
+      "turns": [
+        {
+          "user": "We are on Net 30 terms. Is there any benefit to paying an invoice early, and what happens if we pay late?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "If you pay an invoice within 10 days of the invoice date, you can deduct 2% of the merchandise total. Overdue balances carry a finance charge of 1.5% per month. When an account is more than 15 days past due, it goes on credit hold and new orders do not ship until the overdue balance is paid.",
+            "must_include": [
+              {
+                "fact": "Paying within 10 days of the invoice date earns a 2% discount on the merchandise total.",
+                "match_any": ["2%", "2 percent"]
+              },
+              {
+                "fact": "The early payment period is 10 days from the invoice date.",
+                "match_any": ["10 days", "ten days"]
+              },
+              {
+                "fact": "Overdue balances carry a finance charge of 1.5% per month.",
+                "match_any": ["1.5%", "1.5 percent"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-ordering-payment-terms",
+                "section": "Net 30 credit accounts",
+                "quote": "Early payment discount: if you pay an invoice within 10 days of the invoice date, you can deduct 2% of the merchandise total."
+              },
+              {
+                "doc_id": "northline-ordering-payment-terms",
+                "section": "Net 30 credit accounts",
+                "quote": "Late payment: overdue balances carry a finance charge of 1.5% per month."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-15",
+      "category": "answerable",
+      "title": "Volume discount for a $6,000 order",
+      "topics": ["volume-orders"],
+      "turns": [
+        {
+          "user": "We are planning a single order of about $6,000 in printers and toner. Do we get a discount?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Yes. An order with a merchandise subtotal from $5,000.00 to $14,999.99 at list prices gets an 8% volume discount on the whole order, including supplies. It is applied automatically, with no discount code. On a $6,000 order that is $480 off.",
+            "must_include": [
+              {
+                "fact": "An order of about $6,000 gets an 8% volume discount.",
+                "match_any": ["8%", "8 percent"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says the $6,000 order gets the 5% or the 12% tier."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-volume-orders-quotes",
+                "section": "Volume discounts",
+                "quote": "$5,000.00 to $14,999.99 | 8%"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-16",
+      "category": "answerable",
+      "title": "Discount and shipping for 12 shredders (multi-document)",
+      "topics": ["volume-orders", "shipping", "products"],
+      "turns": [
+        {
+          "user": "We want to order 12 S-300 shredders in one order. What discount would we get, and would shipping be free?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Twelve S-300 shredders at $279.00 each come to $3,348.00 at list prices, which qualifies for the 5% volume discount. That takes $167.40 off, for a merchandise total of $3,180.60. The shipping weight is 36 lb per unit, 432 lb in total, so the order ships by LTL freight. Standard LTL freight is free because the merchandise subtotal is $2,500 or more. Liftgate service ($45.00) and inside delivery ($95.00) are charged separately if you need them.",
+            "must_include": [
+              {
+                "fact": "The order qualifies for the 5% volume discount ($3,348.00 at list prices).",
+                "match_any": ["5%", "5 percent"]
+              },
+              {
+                "fact": "The order ships by LTL freight because its shipping weight is over 150 lb.",
+                "match_any": ["freight"]
+              },
+              {
+                "fact": "Standard freight is free because the merchandise subtotal is $2,500 or more.",
+                "match_any": ["free"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says the order gets the 8% or the 12% tier."
+              },
+              {
+                "claim": "Quotes the $14.95 Standard Ground rate as the shipping charge for this order.",
+                "match_any": ["$14.95"]
+              }
+            ],
+            "require_all_sources": true,
+            "sources": [
+              {
+                "doc_id": "northline-volume-orders-quotes",
+                "section": "Volume discounts",
+                "quote": "$2,500.00 to $4,999.99 | 5%"
+              },
+              {
+                "doc_id": "northline-product-s300",
+                "section": "Specifications",
+                "quote": "Shipping weight | 36 lb"
+              },
+              {
+                "doc_id": "northline-shipping-policy",
+                "section": "Freight shipping",
+                "quote": "Standard LTL freight is free when the merchandise subtotal, after any discounts, is $2,500 or more."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-17",
+      "category": "answerable",
+      "title": "Saturday service hours",
+      "topics": ["contact"],
+      "turns": [
+        {
+          "user": "Can I reach someone about a printer problem on a Saturday?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Yes. The Technical Service Desk is open on Saturday from 9:00 a.m. to 1:00 p.m. Pacific Time, by phone only, at (800) 555-0164. Emails received on Saturday are answered on the next business day.",
+            "must_include": [
+              {
+                "fact": "The Technical Service Desk is open on Saturday from 9:00 a.m.",
+                "match_any": ["9:00 a.m.", "9 a.m.", "9:00 am", "9 am", "9am"]
+              },
+              {
+                "fact": "Saturday hours end at 1:00 p.m.",
+                "match_any": ["1:00 p.m.", "1 p.m.", "1:00 pm", "1 pm", "1pm"]
+              },
+              {
+                "fact": "Saturday service is by phone at (800) 555-0164.",
+                "match_any": ["555-0164"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says Customer Support, Sales or Billing are open on Saturday."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-contact-support-hours",
+                "section": "Technical Service Desk",
+                "quote": "Hours: Monday through Friday, 7:00 a.m. to 6:00 p.m., and Saturday, 9:00 a.m. to 1:00 p.m."
+              },
+              {
+                "doc_id": "northline-service-maintenance-guide",
+                "page": 1,
+                "section": "Contacting the Technical Service Desk",
+                "quote": "Saturday, 9:00 a.m. to 1:00 p.m. Pacific Time (phone only)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-18",
+      "category": "answerable",
+      "title": "High-yield toner for the P-240",
+      "topics": ["products"],
+      "turns": [
+        {
+          "user": "Which toner cartridge gives the most pages for the P-240, and what does it cost?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "The high-yield cartridge NL-T240X prints about 8,000 pages and costs $119.00. The standard cartridge NL-T240 prints about 3,000 pages and costs $64.00. Yields are based on 5% page coverage.",
+            "must_include": [
+              {
+                "fact": "The high-yield cartridge is NL-T240X.",
+                "match_any": ["NL-T240X"]
+              },
+              {
+                "fact": "It prints about 8,000 pages.",
+                "match_any": ["8,000", "8000"]
+              },
+              {
+                "fact": "It costs $119.00.",
+                "match_any": ["$119"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Recommends a C-360 cartridge (NL-T360 series) for the P-240.",
+                "match_any": ["NL-T360"]
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-product-p240",
+                "section": "Supplies and accessories",
+                "quote": "NL-T240X | High-yield toner cartridge, about 8,000 pages | $119.00"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-19",
+      "category": "answerable",
+      "title": "C-360 document feeder and two-sided scanning",
+      "topics": ["products"],
+      "turns": [
+        {
+          "user": "Can the C-360 scan both sides of a page automatically, and how many sheets does its document feeder hold?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Yes. The automatic document feeder of the C-360 holds 50 sheets and scans both sides of a page in a single pass.",
+            "must_include": [
+              {
+                "fact": "The automatic document feeder holds 50 sheets.",
+                "match_any": ["50 sheets", "50-sheet", "50 pages"]
+              },
+              {
+                "fact": "The feeder scans both sides of a page in a single pass.",
+                "match_any": ["two-sided", "both sides", "duplex", "double-sided"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-product-c360",
+                "page": 1,
+                "section": "Scan and fax",
+                "quote": "Automatic document feeder | 50 sheets, single-pass two-sided scanning"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ans-20",
+      "category": "answerable",
+      "title": "LP-420 connectivity",
+      "topics": ["products"],
+      "turns": [
+        {
+          "user": "Can the LP-420 label printer connect over Wi-Fi?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "No. The LP-420 does not have Wi-Fi or Bluetooth. It connects by USB 2.0 or Ethernet. To share it across an office, connect it to the network by Ethernet.",
+            "must_include": [
+              {
+                "fact": "The LP-420 does not have Wi-Fi.",
+                "match_any": ["does not have wi-fi", "doesn't have wi-fi", "no wi-fi", "not have wi-fi", "not support wi-fi", "without wi-fi", "not available"]
+              },
+              {
+                "fact": "It connects by USB or Ethernet.",
+                "match_any": ["ethernet"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says the LP-420 supports Wi-Fi or Bluetooth."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-product-lp420",
+                "section": "Specifications",
+                "quote": "The LP-420 does not have Wi-Fi or Bluetooth."
+              },
+              {
+                "doc_id": "northline-product-lp420",
+                "section": "Specifications",
+                "quote": "Interfaces | USB 2.0 and Ethernet"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

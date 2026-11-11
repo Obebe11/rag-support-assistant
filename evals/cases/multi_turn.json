@@ -1,0 +1,434 @@
+{
+  "schema_version": 1,
+  "category": "multi_turn",
+  "cases": [
+    {
+      "id": "multi-01",
+      "category": "multi_turn",
+      "title": "Clarify the product before answering a warranty question",
+      "topics": ["warranty", "service"],
+      "notes": "The first message names no product and no purchase date, so coverage cannot be determined. The second turn needs two warranty periods for one product: the machine and the cutting head.",
+      "turns": [
+        {
+          "user": "Our machine keeps jamming. Is the repair covered?",
+          "expect": {
+            "response_type": "clarification",
+            "reference_answer": "I can check that for you. Which Northline product is it, and roughly when was it delivered?",
+            "must_include": [
+              {
+                "fact": "Asks which product the visitor means (and, ideally, when it was delivered).",
+                "match_any": ["which product", "which model", "which machine", "what product", "what model", "which northline", "what machine", "which device", "which one"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "States that the repair is covered, or that it is not covered, before the product is known."
+              }
+            ],
+            "sources": []
+          }
+        },
+        {
+          "user": "It is the S-300 shredder. It was delivered about three years ago.",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "The S-300 has a 2-year warranty on the machine and a 5-year warranty on the cutting head, both from the delivery date. After three years the machine warranty has ended, but the cutting head is still covered. If the jamming is caused by a defect in the cutting head, the repair is covered. Otherwise it is an out-of-warranty repair: the diagnostic fee is $65.00 per unit and is credited toward the repair if you approve it. The Technical Service Desk can troubleshoot by phone or email at no charge first.",
+            "must_include": [
+              {
+                "fact": "The S-300 machine warranty is 2 years, so it has ended.",
+                "match_any": ["2 years", "2-year", "two years", "two-year"]
+              },
+              {
+                "fact": "The S-300 cutting head is covered for 5 years, so it is still covered.",
+                "match_any": ["5 years", "5-year", "five years", "five-year"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says the whole shredder is still under warranty, or that nothing is covered any more."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 1,
+                "section": "Warranty periods",
+                "quote": "S-300 Cross-Cut Shredder | 2 years on the machine; 5 years on the cutting head"
+              },
+              {
+                "doc_id": "northline-product-s300",
+                "section": "Warranty",
+                "quote": "The S-300 has a 2-year warranty on the machine and a 5-year warranty on the cutting head, both from the delivery date."
+              },
+              {
+                "doc_id": "northline-service-maintenance-guide",
+                "page": 1,
+                "section": "Out-of-warranty repair",
+                "quote": "The diagnostic fee is $65.00 per unit."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-02",
+      "category": "multi_turn",
+      "title": "Return of an opened printer across three follow-up questions",
+      "topics": ["returns"],
+      "notes": "Later turns depend on the context of earlier ones: 'it' is the P-240 and 'that authorization' is the RMA number.",
+      "turns": [
+        {
+          "user": "We received a P-240 ten days ago and it is more printer than we need. Can we send it back?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Yes. You can return most items within 30 days of the delivery date, so you are within the return window. Every return needs an RMA number. The refund depends on the condition of the printer.",
+            "must_include": [
+              {
+                "fact": "The return window is 30 days from delivery, so a return after ten days is possible.",
+                "match_any": ["30 days", "30-day", "thirty days"]
+              },
+              {
+                "fact": "The return needs an RMA number.",
+                "match_any": ["rma", "return merchandise authorization", "return authorization"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Return window",
+                "quote": "You can return most items within 30 days of the delivery date."
+              },
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Return authorization",
+                "quote": "Every return needs a return merchandise authorization (RMA) number."
+              }
+            ]
+          }
+        },
+        {
+          "user": "It has been opened, and we have printed about 40 pages on it.",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "It can still be returned. A laser printer counts as like-new if its page counter shows 100 pages or fewer, so 40 pages is within the limit. An opened item in like-new condition, with all accessories, manuals and packaging, is refunded at the item price less a 15% restocking fee. You pay the return shipping, and the original shipping charge is not refunded.",
+            "must_include": [
+              {
+                "fact": "A laser printer counts as like-new only if it has printed 100 pages or fewer; 40 pages qualifies.",
+                "match_any": ["100 pages"]
+              },
+              {
+                "fact": "The refund is the item price less a 15% restocking fee.",
+                "match_any": ["15%", "15 percent"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says the printer cannot be returned because it has been used."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Item condition and refund amount",
+                "quote": "A laser printer or multifunction printer counts as like-new only if its page counter shows 100 pages or fewer."
+              },
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Item condition and refund amount",
+                "quote": "Opened, in like-new condition with all accessories, manuals and packaging | Item price less a 15% restocking fee"
+              }
+            ]
+          }
+        },
+        {
+          "user": "OK. How do we get that authorization, and how long is it good for?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Request the RMA number on the Orders page of the account portal or by email at returns@northline.example.com, with the order number, the item and the reason for the return. Northline issues RMA numbers within 1 business day. The RMA number is valid for 14 days from the date it is issued, so ship the return within that period and write the number on the outside of the box.",
+            "must_include": [
+              {
+                "fact": "The RMA number is requested on the Orders page of the account portal or from returns@northline.example.com.",
+                "match_any": ["returns@northline.example.com", "orders page", "account portal"]
+              },
+              {
+                "fact": "The RMA number is valid for 14 days from the date it is issued.",
+                "match_any": ["14 days", "14-day", "fourteen days"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Return authorization",
+                "quote": "An RMA number is valid for 14 days from the date we issue it."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-03",
+      "category": "multi_turn",
+      "title": "Clarify the printer before quoting a toner price",
+      "topics": ["products", "service"],
+      "notes": "Two printers use toner, with different cartridges and prices. 'The color one' in the second turn identifies the C-360.",
+      "turns": [
+        {
+          "user": "How much is the replacement toner?",
+          "expect": {
+            "response_type": "clarification",
+            "reference_answer": "That depends on the printer. Which printer is it for: the P-240 monochrome laser printer or the C-360 color multifunction printer?",
+            "must_include": [
+              {
+                "fact": "Asks which printer the toner is for.",
+                "match_any": ["which printer", "which model", "what printer", "what model", "p-240 or", "which northline", "which one"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Gives a single toner price as the answer without knowing the printer."
+              }
+            ],
+            "sources": []
+          }
+        },
+        {
+          "user": "The color one.",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "For the C-360, the black toner cartridge NL-T360K costs $98.00 and prints about 7,000 pages. The cyan, magenta and yellow cartridges (NL-T360C, NL-T360M and NL-T360Y) cost $124.00 each and print about 5,000 pages each.",
+            "must_include": [
+              {
+                "fact": "The C-360 black toner cartridge costs $98.00.",
+                "match_any": ["$98"]
+              },
+              {
+                "fact": "The C-360 color toner cartridges cost $124.00 each.",
+                "match_any": ["$124"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Quotes P-240 toner prices as the answer.",
+                "match_any": ["$64", "$119"]
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-product-c360",
+                "page": 3,
+                "section": "Supplies",
+                "quote": "NL-T360K | Black toner cartridge, about 7,000 pages | $98.00"
+              },
+              {
+                "doc_id": "northline-product-c360",
+                "page": 3,
+                "section": "Supplies",
+                "quote": "Cyan, magenta and yellow toner cartridges, about 5,000 pages each | $124.00 each"
+              }
+            ]
+          }
+        },
+        {
+          "user": "And how often does the waste toner container need replacing?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Replace the C-360 waste toner container (NL-WT360) every 30,000 pages. It costs $24.00.",
+            "must_include": [
+              {
+                "fact": "The C-360 waste toner container is replaced every 30,000 pages.",
+                "match_any": ["30,000", "30000"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-service-maintenance-guide",
+                "page": 2,
+                "section": "C-360 Color Multifunction Printer",
+                "quote": "Replace the waste toner container NL-WT360, $24.00 | Every 30,000 pages"
+              },
+              {
+                "doc_id": "northline-product-c360",
+                "page": 3,
+                "section": "Supplies",
+                "quote": "NL-WT360 | Waste toner container, replace every 30,000 pages | $24.00"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-04",
+      "category": "multi_turn",
+      "title": "Knowledge gap in the middle of a conversation, then back to grounded answers",
+      "topics": ["volume-orders", "payment"],
+      "notes": "The second turn is a knowledge gap (leasing). The assistant must return to grounded answers in the third turn and must not carry the gap over.",
+      "turns": [
+        {
+          "user": "What discount would we get on an order of about $18,000?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "An order with a merchandise subtotal of $15,000.00 or more at list prices gets a 12% volume discount on the whole order. It is applied automatically.",
+            "must_include": [
+              {
+                "fact": "An order of about $18,000 gets a 12% volume discount.",
+                "match_any": ["12%", "12 percent"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-volume-orders-quotes",
+                "section": "Volume discounts",
+                "quote": "$15,000.00 or more | 12%"
+              }
+            ]
+          }
+        },
+        {
+          "user": "Could we lease the equipment instead of buying it?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "I could not find anything about leasing in the Northline documents. I can pass that question to the Sales team so that a person can answer it. Would you like me to do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Describes a leasing or rental plan, or presents Net 30 terms as leasing."
+              }
+            ],
+            "sources": []
+          }
+        },
+        {
+          "user": "Understood. How do we get a formal quote, and how long would the price hold?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "Request a quote by email at quotes@northline.example.com or on the Quotes page of the account portal. Include the SKUs and quantities, the delivery ZIP code, the date you need delivery and any special requirements. Standard quotes are sent within 1 business day, or up to 2 business days if the quote includes freight shipping or special-order items. A quote is valid for 30 days from the quote date, and its prices and discounts are held for that period.",
+            "must_include": [
+              {
+                "fact": "A quote is requested from quotes@northline.example.com or on the Quotes page of the account portal.",
+                "match_any": ["quotes@northline.example.com", "quotes page"]
+              },
+              {
+                "fact": "A quote is valid for 30 days from the quote date.",
+                "match_any": ["30 days", "30-day", "thirty days"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-volume-orders-quotes",
+                "section": "Requesting a quote",
+                "quote": "A quote is valid for 30 days from the quote date."
+              },
+              {
+                "doc_id": "northline-volume-orders-quotes",
+                "section": "Requesting a quote",
+                "quote": "Request a quote by email at quotes@northline.example.com or on the Quotes page of the account portal."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-05",
+      "category": "multi_turn",
+      "title": "Cancellation that turns into a return after the order ships",
+      "topics": ["ordering", "returns", "shipping"],
+      "notes": "The visitor corrects the situation in the second turn: the order has already shipped. The answer must change from the cancellation rule to the Returns Policy. The third turn needs the refused-delivery rule from the Shipping Policy.",
+      "turns": [
+        {
+          "user": "I placed an order this morning, but I need to cancel it. Is there a fee?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "No. You can change or cancel an order at no charge at any time before it ships. Contact Customer Support with your order number. The exception is a special-order item, which can be canceled at no charge only within 24 hours of the order confirmation.",
+            "must_include": [
+              {
+                "fact": "An order can be canceled at no charge before it ships.",
+                "match_any": ["no charge", "no fee", "free of charge", "without charge", "no cost", "at no"]
+              },
+              {
+                "fact": "Cancellation is possible only before the order ships.",
+                "match_any": ["before it ships", "before the order ships", "before shipment", "before it has shipped", "not yet shipped", "hasn't shipped", "has not shipped"]
+              }
+            ],
+            "must_not_include": [],
+            "sources": [
+              {
+                "doc_id": "northline-ordering-payment-terms",
+                "section": "Order changes and cancellations",
+                "quote": "You can change or cancel an order at no charge at any time before it ships."
+              }
+            ]
+          }
+        },
+        {
+          "user": "I just got the tracking email, so it has already shipped.",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "An order that has shipped cannot be canceled, so the Returns Policy applies instead. Once it is delivered, you can return it within 30 days of the delivery date. Request an RMA number first. An unopened item in its original sealed packaging is refunded at 100% of the item price. For a change-of-mind return you pay the return shipping, and the original shipping charge is not refunded.",
+            "must_include": [
+              {
+                "fact": "A shipped order cannot be canceled; the Returns Policy applies.",
+                "match_any": ["cannot be canceled", "can't be canceled", "can no longer be canceled", "cannot cancel", "can't cancel", "too late to cancel", "returns policy"]
+              },
+              {
+                "fact": "The item can be returned within 30 days of delivery with an RMA number.",
+                "match_any": ["30 days", "30-day", "thirty days"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says the shipped order can still be canceled at no charge."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-ordering-payment-terms",
+                "section": "Order changes and cancellations",
+                "quote": "An order that has shipped cannot be canceled. The Returns Policy applies instead."
+              },
+              {
+                "doc_id": "northline-returns-policy",
+                "section": "Return window",
+                "quote": "You can return most items within 30 days of the delivery date."
+              }
+            ]
+          }
+        },
+        {
+          "user": "What if I just refuse the delivery?",
+          "expect": {
+            "response_type": "grounded",
+            "reference_answer": "If you refuse delivery of an undamaged order, Northline treats it as a return, and the refund is reduced by the return shipping cost and a 15% restocking fee. Accepting the delivery and returning the unopened item with an RMA number avoids the restocking fee.",
+            "must_include": [
+              {
+                "fact": "A refused delivery is treated as a return, and the refund is reduced by the return shipping cost and a 15% restocking fee.",
+                "match_any": ["15%", "15 percent"]
+              }
+            ],
+            "must_not_include": [
+              {
+                "claim": "Says refusing the delivery gives a refund with no deduction."
+              }
+            ],
+            "sources": [
+              {
+                "doc_id": "northline-shipping-policy",
+                "section": "Address changes and refused deliveries",
+                "quote": "If you refuse delivery of an undamaged order, we treat it as a return. The refund is reduced by the return shipping cost and a 15% restocking fee."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

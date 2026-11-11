@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "category": "unanswerable",
+  "cases": [
+    {
+      "id": "gap-01",
+      "category": "unanswerable",
+      "title": "Shipping outside the United States",
+      "topics": ["shipping"],
+      "notes": "The Shipping Policy covers deliveries within the United States only. No document says whether Northline ships to other countries.",
+      "turns": [
+        {
+          "user": "Do you ship to Canada? We have an office in Toronto.",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "The Northline documents I have cover deliveries within the United States and do not say whether orders can ship to Canada. I can pass your question to the Northline team so that a person can confirm. Would you like me to do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "States as a fact that Northline ships to Canada, or quotes a rate or delivery time for Canada."
+              },
+              {
+                "claim": "States as a documented policy that Northline does not ship to Canada."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-02",
+      "category": "unanswerable",
+      "title": "Leasing and financing",
+      "topics": ["payment"],
+      "notes": "The corpus describes cards, ACH, wire, check and Net 30 terms. It says nothing about leasing, rental or installment financing.",
+      "turns": [
+        {
+          "user": "Do you offer leasing or monthly financing for the C-360?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "I could not find anything about leasing or monthly financing in the Northline documents. I can pass your question to the Sales team so that a person can answer it. Would you like that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Describes a leasing, rental or installment plan, or quotes a monthly payment."
+              },
+              {
+                "claim": "Presents Net 30 terms as a leasing or financing plan."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-03",
+      "category": "unanswerable",
+      "title": "Trade-in and disposal of old equipment",
+      "topics": ["service"],
+      "notes": "No document covers trade-in credit, take-back or recycling of old equipment.",
+      "turns": [
+        {
+          "user": "Can we trade in our old copier, or will you take it away for recycling when the new one arrives?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "The Northline documents do not cover trade-ins or taking back old equipment for recycling. I can pass your question to the Northline team for an answer. Shall I do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Describes a trade-in credit, a take-back service or a recycling program."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-04",
+      "category": "unanswerable",
+      "title": "Price matching",
+      "topics": ["pricing"],
+      "notes": "The corpus describes list prices, volume discounts and quotes. It has no price-match policy.",
+      "turns": [
+        {
+          "user": "Another supplier sells a comparable shredder for less. Do you price match?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "I do not have any information about price matching in the Northline documents. I can pass your request to the Sales team so that a person can respond. Would you like me to do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Confirms or denies a price-match policy as if it were documented."
+              },
+              {
+                "claim": "Promises a specific price reduction."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-05",
+      "category": "unanswerable",
+      "title": "Sales tax exemption",
+      "topics": ["payment"],
+      "notes": "No document mentions sales tax or exemption certificates.",
+      "turns": [
+        {
+          "user": "We are a tax-exempt organization. How do we submit our exemption certificate so that we are not charged sales tax?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "The Northline documents do not explain how sales tax is handled or how to submit an exemption certificate. I can pass your question to the Billing team so that a person can help. Would you like that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Describes a procedure, form or address for submitting an exemption certificate as if it were documented."
+              },
+              {
+                "claim": "States whether Northline charges sales tax."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-06",
+      "category": "unanswerable",
+      "title": "Linux support for the LP-420",
+      "topics": ["products"],
+      "notes": "Near miss: the LP-420 product sheet lists Windows and macOS only. It does not say whether Linux is supported.",
+      "turns": [
+        {
+          "user": "Does the LP-420 work with Linux? We run Ubuntu on our shipping stations.",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "The LP-420 product sheet lists Windows 10, Windows 11 and macOS 12 or later as supported operating systems. It does not say anything about Linux, so I cannot confirm whether it works. I can pass your question to the Northline team for a definite answer. Would you like me to do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "States that the LP-420 works with Linux or that a Linux driver exists."
+              },
+              {
+                "claim": "States as a documented fact that Linux is not supported."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-07",
+      "category": "unanswerable",
+      "title": "S-300 noise level",
+      "topics": ["products"],
+      "notes": "Near miss: the P-240 product sheet lists a noise level of 53 dB. The S-300 product sheet has no noise specification.",
+      "turns": [
+        {
+          "user": "How loud is the S-300 when it is running? I need the noise level in decibels.",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "The S-300 product sheet does not list a noise level, so I cannot give you a figure in decibels. I can pass your question to the Northline team to get that specification. Would you like that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Gives a noise level for the S-300, including the 53 dB figure that belongs to the P-240.",
+                "match_any": ["53 db", "53db", "53 decibel"]
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-08",
+      "category": "unanswerable",
+      "title": "On-site installation",
+      "topics": ["service"],
+      "notes": "Near miss: the corpus covers remote troubleshooting and repair at the service center. It does not say whether Northline sends anyone to a customer site to install or set up equipment.",
+      "turns": [
+        {
+          "user": "Can you send a technician to install and set up the C-360 at our office?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "I could not find anything in the Northline documents about on-site installation or setup by a technician. I can pass your request to the Northline team so that a person can tell you what is possible. Would you like me to do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Offers, prices or schedules an on-site installation visit."
+              },
+              {
+                "claim": "States as a documented policy that Northline does not provide on-site installation."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-09",
+      "category": "unanswerable",
+      "title": "Reseller program",
+      "topics": ["sales"],
+      "notes": "No document describes a reseller, dealer or distributor program.",
+      "turns": [
+        {
+          "user": "Do you have a reseller or dealer program? We would like to resell Northline products.",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "The Northline documents do not describe a reseller or dealer program. I can pass your question to the Sales team so that a person can follow up. Would you like that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "Describes reseller terms, margins or an application process."
+              },
+              {
+                "claim": "Presents volume discounts as a reseller program."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "gap-10",
+      "category": "unanswerable",
+      "title": "Discounts for schools and nonprofits",
+      "topics": ["pricing"],
+      "notes": "The corpus describes volume discounts based on order size. It has no pricing for schools, nonprofits or public bodies.",
+      "turns": [
+        {
+          "user": "Do schools or nonprofit organizations get a special discount?",
+          "expect": {
+            "response_type": "knowledge_gap",
+            "offer_handoff": true,
+            "reference_answer": "I do not see any discount for schools or nonprofit organizations in the Northline documents. I can pass your question to the Sales team so that a person can confirm. Would you like me to do that?",
+            "must_include": [],
+            "must_not_include": [
+              {
+                "claim": "States a discount rate or eligibility rule for schools or nonprofits."
+              },
+              {
+                "claim": "States as a documented policy that no such discount exists."
+              }
+            ],
+            "sources": []
+          }
+        }
+      ]
+    }
+  ]
+}
