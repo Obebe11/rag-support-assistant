@@ -82,6 +82,7 @@ def _lead(inquiry: Inquiry, delivery: InquiryDelivery) -> LeadPayload:
         ),
         notes=inquiry.notes,
         attempt=delivery.attempt_count,
+        confirmed_at=inquiry.confirmed_at,
     )
 
 

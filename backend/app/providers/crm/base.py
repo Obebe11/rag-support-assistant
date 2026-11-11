@@ -3,6 +3,7 @@
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, ClassVar, Self
 
 from app.core.config import CRMProviderMode, Settings
@@ -35,6 +36,8 @@ class LeadPayload:
     kind: InquiryKind = InquiryKind.PURCHASE
     attempt: int = 1
     """Number of this delivery attempt for the inquiry, starting at 1."""
+    confirmed_at: datetime | None = None
+    """When the visitor confirmed the inquiry."""
 
 
 @dataclass(frozen=True, slots=True)

@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     crm_provider: CRMProviderMode = CRMProviderMode.SIMULATED
     hubspot_access_token: SecretStr | None = None
     hubspot_base_url: str = "https://api.hubapi.com"
+    hubspot_api_version: str = Field(
+        default="2026-09",
+        pattern=r"^\d{4}-\d{2}$",
+        description="Date-based HubSpot API version used in request paths.",
+    )
     hubspot_timeout_seconds: float = Field(default=10.0, gt=0)
     crm_access_check_enabled: bool = Field(
         default=True,
