@@ -1,0 +1,68 @@
+[project]
+name = "handoff-ai-backend"
+version = "0.1.0"
+description = "Handoff AI backend: grounded answers with citations and confirmed inquiry delivery to a CRM."
+requires-python = ">=3.13,<3.14"
+license = "MIT"
+dependencies = [
+    "alembic>=1.14",
+    "asyncpg>=0.30",
+    "fastapi>=0.115",
+    "httpx>=0.28",
+    "pgvector>=0.3.6",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "pypdf>=5.1",
+    "python-multipart>=0.0.20",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "uvicorn>=0.34",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.14",
+    # Embedded PostgreSQL + pgvector for local development and tests without Docker.
+    # Pinned: 0.7.x wheels ship a pgvector build that needs AVX-512 and crashes
+    # with SIGILL on CPUs without it.
+    "pixeltable-pgserver==0.5.1",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.9",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "ASYNC", "SIM", "RUF", "PT", "C4", "T20"]
+ignore = [
+    "S101", # assert is the pytest idiom
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+"scripts/**" = ["T20"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests", "scripts", "migrations"]
+
+[[tool.mypy.overrides]]
+module = ["pgvector.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+addopts = "-q"
