@@ -172,13 +172,25 @@ export const warrantyCitations: Citation[] = [
     document_title: "Warranty Policy",
     document_version_id: "7a000000-0000-4000-8000-000000000103",
     version_number: 1,
-    version_label: null,
+    version_label: "4.0",
     chunk_id: "8c000000-0000-4000-8000-000000000302",
     page_number: 2,
     section: null,
     excerpt:
       "The warranty covers defects in materials and workmanship that appear during the warranty period under normal use, parts and labor for covered repairs, and shipping in both directions.",
     score: 0.69,
+  },
+  {
+    document_id: DOC_P240,
+    document_title: "Northline P-240 Monochrome Laser Printer",
+    document_version_id: "7a000000-0000-4000-8000-000000000106",
+    version_number: 2,
+    version_label: null,
+    chunk_id: "8c000000-0000-4000-8000-000000000303",
+    page_number: null,
+    section: "Warranty",
+    excerpt: "The P-240 comes with a 2-year limited warranty that starts on the delivery date.",
+    score: 0.61,
   },
 ];
 
@@ -248,7 +260,7 @@ export const knowledgeGapReply = (): MessageRead =>
   assistantMessage({
     answer_type: "knowledge_gap",
     content:
-      "I could not find this in Northline's documents, so I cannot answer it reliably. A member of the Northline team can help you with this question.",
+      "I could not find an answer to that in the company's documents, and I do not want to guess. I can pass your question to a member of the team. Would you like a person to follow up with you?",
   });
 
 export const clarificationReply = (): MessageRead =>

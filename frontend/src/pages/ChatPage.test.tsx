@@ -155,7 +155,8 @@ describe("Chat: answer types", () => {
 
     const sources = await within(conversation()).findByRole("region", { name: "Sources" });
     expect(within(sources).getByText("Version 4.0, page 1")).toBeVisible();
-    expect(within(sources).getByText("Version 1, page 2")).toBeVisible();
+    expect(within(sources).getByText("Version 4.0, page 2")).toBeVisible();
+    expect(within(sources).getByText("Version 2, Warranty")).toBeVisible();
   });
 
   it("shows excerpts under the answer and opens the panel on request in a narrow window", async () => {

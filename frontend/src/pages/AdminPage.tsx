@@ -173,7 +173,7 @@ function AdminWorkspace({ session, client }: { session: AdminSession; client: Ad
               role="status"
             >
               {loaded ? summary : ""}
-              {notice !== "" && view === "documents" ? ` ${notice}` : ""}
+              {notice !== "" && view === "documents" ? `${loaded ? ". " : ""}${notice}` : ""}
             </p>
             <span aria-hidden className="flex-1 sm:hidden" />
             {view === "documents" ? (
@@ -234,7 +234,7 @@ function AdminWorkspace({ session, client }: { session: AdminSession; client: Ad
           onClose={() => setDialog(null)}
           onSubmit={async (input) => {
             const failure = await documents.upload(input);
-            if (failure === null) setNotice("Document uploaded. Indexing starts shortly.");
+            if (failure === null) setNotice("Document uploaded. The assistant cites it after indexing.");
             return failure;
           }}
         />
@@ -245,7 +245,7 @@ function AdminWorkspace({ session, client }: { session: AdminSession; client: Ad
           onClose={() => setDialog(null)}
           onSubmit={async (input) => {
             const failure = await documents.replace(dialog.document.id, input);
-            if (failure === null) setNotice("New version uploaded. Indexing starts shortly.");
+            if (failure === null) setNotice("New version uploaded. It becomes active after indexing.");
             return failure;
           }}
         />

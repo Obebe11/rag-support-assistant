@@ -22,11 +22,15 @@ backend/
 frontend/
   src/
     api/          typed API client; schema.d.ts is generated from docs/openapi.json
-    app/          page frame (header, mode banner, footer)
-    components/   shared components
+    app/          page frame (sidebar, header, mode badge, health banner)
+    features/     chat, inquiry and admin: state hooks and views
     hooks/        shared hooks
+    lib/          error messages, polling intervals
+    mocks/        mock API for development and tests (MSW)
     pages/        one file per route
-    styles/       design tokens and base styles
+    styles/       project additions to the theme
+    t3code/       UI kit adapted from T3 Code (MIT); see its README
+    test/         test setup and helpers
 docs/
   architecture.md
   inquiries.md    inquiry kinds, delivery, the simulated CRM, HubSpot
@@ -232,12 +236,24 @@ Handlers register in `app/worker/handlers/indexing.py` (T3) and `app/worker/hand
 
 ## Frontend
 
-Routes: `/` (chat) and `/admin`. Both are placeholders until T5 builds the screens.
+Routes: `/` (visitor chat) and `/admin`. The UI talks to the backend only through the typed client; it has no other source of data.
 
-- `src/api/client.ts` exports `api` (visitor endpoints), `createAdminApi(token)`, and `unwrap`, which returns data or throws an `ApiError` in the common format.
-- `src/api/schema.d.ts` is generated; never edit it by hand.
-- `HealthProvider` loads `/api/health` once; `useHealth()` gives it to any component. `ModeBanner` labels demo modes and reports an unreachable server or database.
-- `src/styles/tokens.css` holds the design tokens of the single light theme. Components use tokens only: no hardcoded colors, sizes or fonts. The font stack is system fonts, so no font files are shipped.
+- `src/api/client.ts` exports `api` (visitor endpoints), `createAdminApi(token)`, and `unwrap`, which returns data or throws an `ApiError` in the common format. `src/api/schema.d.ts` is generated; never edit it by hand.
+- `src/t3code/` is the UI kit: theme tokens, controls, the app shell, the timeline, the composer and the right panel, copied or adapted from T3 Code (MIT). Its [README](../frontend/src/t3code/README.md) lists every file, its source and the changes. The rest of the code imports it through the `~` alias. The interface carries no T3 Code branding.
+- `src/app/` is the page frame: the sidebar with the demo status, the header with the mode badge, and the health banner. `HealthProvider` (`src/hooks/useHealth.tsx`) loads `/api/health`; the badge and the banner read it. The badge sits in a header of fixed height and the banner overlays a reserved spacer, so neither moves the content.
+- `src/features/chat/` holds the conversation state (`useChat`: history restore, sending, retry after a failed send) and the sources list. A reply is rendered by `answer_type`: `grounded` shows the text and its citations (document, version, page or section, excerpt; the retrieval score is not shown); `knowledge_gap` offers a human handoff; `inquiry_offer` opens the inquiry form filled from `message.inquiry`; every other type, including an unknown one, is a plain message. `MessageRead.usage` is never shown to the visitor.
+- `src/features/inquiry/` holds the inquiry flow (`useInquiryFlow`): form, validation by the contract and `missing_fields`, preview, explicit confirmation, delivery status with polling, and a manual retry after a failure. A handoff uses `kind: "handoff"` and asks only for the question and the contact. The visitor sees a plain delivery status; the technical `last_error` and the attempt log appear only in the admin.
+- `src/features/admin/` holds the admin session (the token lives in memory only, never in browser storage), documents (upload, replace, delete, versions, indexing status with polling) and inquiries (delivery status, failure reason, attempt log).
+- `src/lib/errors.ts` maps transport failures and API errors to the messages the UI shows. `src/lib/timing.ts` holds the polling intervals.
+- The single theme is light. The font stack is system fonts, so no font files are shipped.
+
+### Mock API
+
+`src/mocks/` answers every endpoint of the contract in the browser with [MSW](https://mswjs.io/), so each UI state can be opened without the backend. It is off by default and exists only in development: `pnpm --dir frontend dev:mock` (or `VITE_API_MOCKS=true`) turns it on, plain `pnpm dev` and `make dev` leave it off, and a production build contains neither the handlers nor the service worker.
+
+Scenario flags come from the page address and stay for the browser tab: `?mock=delivery:fail,health:crm-failed,chat:unavailable,latency:600`; `?mock=reset` returns to the defaults. `src/mocks/browser.ts` lists the values. The mock admin token is `demo-admin-token`. A tagged contact email (`+fail2`, `+fail`, `+reject1`) picks the delivery outcome as the simulated CRM does.
+
+The component and scenario tests (`pnpm --dir frontend test`) run the same handlers in Node.
 
 ## Ownership
 

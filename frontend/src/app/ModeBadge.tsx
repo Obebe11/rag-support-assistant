@@ -34,8 +34,7 @@ export function ModeBadge() {
             <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
               {accessFailed ? (
                 <li>
-                  The CRM access check failed. Confirmed inquiries are saved and stay queued until access is
-                  restored.
+                  Confirmed inquiries are saved and stay queued until access is restored.
                 </li>
               ) : null}
               {notes.map((note) => (

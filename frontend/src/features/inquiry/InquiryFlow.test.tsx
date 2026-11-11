@@ -380,7 +380,7 @@ describe("Human handoff", () => {
     await ask(user, "Do you sell standing desks in walnut?");
 
     const log = within(conversation());
-    expect(await log.findByText(/I could not find this in Northline's documents/)).toBeVisible();
+    expect(await log.findByText(/I could not find an answer to that in the company's documents/)).toBeVisible();
     expect(log.getByRole("button", { name: "Talk to a person" })).toBeVisible();
     expect(log.queryByRole("region", { name: "Sources" })).not.toBeInTheDocument();
     // The panel stays closed until the visitor asks for a person.

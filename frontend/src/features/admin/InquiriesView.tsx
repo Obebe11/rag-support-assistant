@@ -88,7 +88,7 @@ function Delivery({ inquiry, onOpenLog }: { inquiry: InquiryRead; onOpenLog: (in
         <p className="m-0 max-w-72 text-xs whitespace-normal text-muted-foreground">{reason}</p>
       ) : null}
       {unfinished && delivery?.last_error ? (
-        <p className="m-0 max-w-72 text-xs whitespace-normal text-destructive-foreground [overflow-wrap:anywhere]">
+        <p className="m-0 max-w-prose text-xs whitespace-normal text-destructive-foreground [overflow-wrap:anywhere]">
           {delivery.last_error}
         </p>
       ) : null}

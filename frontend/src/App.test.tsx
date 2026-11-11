@@ -90,6 +90,6 @@ describe("Demo modes", () => {
     setMockScenario({ health: "db-down" });
     renderApp("/");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Database unavailable");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Service unavailable");
   });
 });

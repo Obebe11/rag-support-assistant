@@ -39,7 +39,8 @@ The MIT License covers only original work in this repository. Third-party materi
 
 - **Odoo documentation articles** in `demo-docs/odoo/` remain under **CC BY-SA 4.0**. Attribution, the original license and a source manifest are kept in that folder. See the [corpus licensing notice](demo-docs/odoo/README.md#attribution-and-license) and the [Odoo documentation license](demo-docs/odoo/LICENSE).
 
-- **Dependencies** are not copied into this repository. They are installed from PyPI and npm and keep their own licenses. The direct dependencies listed in `backend/pyproject.toml` and `frontend/package.json` are under MIT, Apache-2.0 or BSD-3-Clause.
+- **T3 Code interface code** in `frontend/src/t3code/` is copied or adapted from [T3 Code](https://github.com/pingdotgg/t3code) (`apps/web`, commit `be7d35aae`) and remains under the **MIT License**, Copyright (c) 2026 T3 Tools Inc. The license text, the list of files and the changes are kept in that folder: [LICENSE](frontend/src/t3code/LICENSE), [README](frontend/src/t3code/README.md). No T3 Code names, logos, icons or interface texts are used. The frontend dependencies added with it are under MIT, Apache-2.0 or ISC.
+- **Dependencies** are not copied into this repository. They are installed from PyPI and npm and keep their own licenses. The direct dependencies listed in `backend/pyproject.toml` and `frontend/package.json` are under MIT, Apache-2.0, BSD-3-Clause or ISC.
 - **PostgreSQL and pgvector** are used as the database and are under the PostgreSQL License. They are not part of this repository: Docker Compose pulls the `pgvector/pgvector` image, and local development uses the binaries bundled in the `pixeltable-pgserver` package (Apache-2.0), a development-only dependency.
 
 Any third-party code added later will keep its original license file and be listed here.

@@ -22,7 +22,7 @@ import { modeRows } from "./demoModes";
 function SectionLabel(props: { id: string; children: string }) {
   return (
     <div className="mb-1 mt-3 flex w-full items-center gap-2 px-2.5 text-left">
-      <h2 id={props.id} className="text-xs font-medium text-muted-foreground/50">
+      <h2 id={props.id} className="text-xs font-medium text-muted-foreground">
         {props.children}
       </h2>
       <span aria-hidden className="h-px flex-1 bg-sidebar-border/60" />

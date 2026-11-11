@@ -31,7 +31,7 @@ export function HealthBanner(props: { placement?: "overlay" | "inline" }) {
     return (
       <StatusBanner
         variant="error"
-        title="Database unavailable"
+        title="Service unavailable"
         message="The assistant cannot answer right now."
         action={retry}
         placement={props.placement}
