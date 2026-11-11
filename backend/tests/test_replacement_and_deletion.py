@@ -13,7 +13,15 @@ from sqlalchemy import func, select
 from app.core.config import Settings
 from app.core.db import SessionFactory
 from app.models import Chunk
-from tests.kb import NORTHLINE_DOCUMENTS, REPLACEMENT_TEST, ask, ingest, run_jobs, upload
+from tests.kb import (
+    NORTHLINE_DOCUMENTS,
+    REPLACEMENT_TEST,
+    ask,
+    ingest,
+    run_jobs,
+    start_conversation,
+    upload,
+)
 
 RESTOCKING_FEE = "What is the restocking fee for an opened item?"
 RMA_VALIDITY = "For how many days is an RMA number valid?"
@@ -104,6 +112,50 @@ async def test_after_a_replacement_answers_rely_only_on_the_new_version(
     ]
     # The earlier reply keeps the citation it was given.
     assert old_fee["citations"][0]["document_version_id"] == detail["versions"][0]["id"]
+
+
+async def test_an_earlier_reply_keeps_its_citation_after_the_document_is_replaced(
+    client: httpx.AsyncClient,
+    admin_headers: dict[str, str],
+    session_factory: SessionFactory,
+    settings: Settings,
+) -> None:
+    document = await ingest(
+        client,
+        admin_headers,
+        session_factory,
+        settings,
+        REPLACEMENT_TEST / "returns-policy-v1.3.md",
+        title="Returns Policy",
+        version_label="1.3",
+    )
+    conversation_id = await start_conversation(client)
+    before = await ask(client, RESTOCKING_FEE, conversation_id)
+    assert "20% restocking fee" in _quoted(before)
+
+    await ingest(
+        client,
+        admin_headers,
+        session_factory,
+        settings,
+        NORTHLINE_DOCUMENTS / "returns-policy.md",
+        document_id=document["id"],
+        version_label="2.0",
+    )
+    after = await ask(client, RESTOCKING_FEE, conversation_id)
+
+    # The conversation is read again from storage, as the widget does after a reload.
+    history = (await client.get(f"/api/conversations/{conversation_id}")).json()["messages"]
+    assert [message["role"] for message in history] == ["user", "assistant", "user", "assistant"]
+    assert history[1]["citations"] == before["citations"]
+    assert [(c["version_number"], c["version_label"]) for c in history[1]["citations"]] == [
+        (1, "1.3")
+    ]
+    assert "20% restocking fee" in history[1]["citations"][0]["excerpt"]
+    assert history[3]["citations"] == after["citations"]
+    assert {(c["version_number"], c["version_label"]) for c in history[3]["citations"]} == {
+        (2, "2.0")
+    }
 
 
 async def test_a_replaced_shipping_policy_no_longer_gives_the_old_rate(

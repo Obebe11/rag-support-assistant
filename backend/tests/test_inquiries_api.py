@@ -2,6 +2,7 @@
 
 import asyncio
 import uuid
+from typing import Any
 
 import httpx
 import pytest
@@ -203,14 +204,33 @@ async def test_incomplete_draft_cannot_be_confirmed(
     assert await _count(session_factory, Job) == 0
 
 
-async def test_confirmed_inquiry_cannot_be_changed(client: httpx.AsyncClient) -> None:
-    inquiry_id = await create_confirmed(client, purchase_body())
+@pytest.mark.parametrize(
+    ("body", "change", "field", "value"),
+    [
+        (purchase_body(), {"quantity": 99}, "quantity", 20),
+        (
+            handoff_body(),
+            {"notes": "Something else."},
+            "notes",
+            "Do you offer on-site assembly in Alaska?",
+        ),
+    ],
+    ids=["purchase", "handoff"],
+)
+async def test_confirmed_inquiry_cannot_be_changed(
+    client: httpx.AsyncClient,
+    body: dict[str, Any],
+    change: dict[str, Any],
+    field: str,
+    value: object,
+) -> None:
+    inquiry_id = await create_confirmed(client, body)
 
-    response = await client.patch(f"/api/inquiries/{inquiry_id}", json={"quantity": 99})
+    response = await client.patch(f"/api/inquiries/{inquiry_id}", json=change)
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "conflict"
-    assert (await client.get(f"/api/inquiries/{inquiry_id}")).json()["quantity"] == 20
+    assert (await client.get(f"/api/inquiries/{inquiry_id}")).json()[field] == value
 
 
 async def test_confirming_twice_queues_one_delivery(

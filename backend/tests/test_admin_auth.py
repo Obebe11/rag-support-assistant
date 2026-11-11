@@ -93,19 +93,32 @@ async def test_every_admin_endpoint_is_closed_when_no_token_is_configured(
                     assert response.status_code == 403, f"{method} {path} with {token!r}"
 
 
+@pytest.mark.parametrize(
+    ("headers", "status_code"),
+    [({}, 401), ({"Authorization": "Bearer wrong-token"}, 403)],
+    ids=["no-token", "wrong-token"],
+)
 async def test_authorization_is_checked_before_the_request_is_validated(
-    client: httpx.AsyncClient,
+    client: httpx.AsyncClient, headers: dict[str, str], status_code: int
 ) -> None:
     """A visitor learns nothing about admin endpoints, not even validation rules."""
-    invalid_query = await client.get("/api/admin/inquiries", params={"limit": "many"})
-    missing_file = await client.post("/api/admin/documents", data={"title": "No file"})
-    invalid_id = await client.delete("/api/admin/documents/not-a-uuid")
+    invalid_query = await client.get(
+        "/api/admin/inquiries", params={"limit": "many"}, headers=headers
+    )
+    missing_file = await client.post(
+        "/api/admin/documents", data={"title": "No file"}, headers=headers
+    )
+    invalid_id = await client.delete("/api/admin/documents/not-a-uuid", headers=headers)
+    invalid_search = await client.post(
+        "/api/admin/documents/search", json={"top_k": "many"}, headers=headers
+    )
 
-    assert [invalid_query.status_code, missing_file.status_code, invalid_id.status_code] == [
-        401,
-        401,
-        401,
-    ]
+    assert [
+        invalid_query.status_code,
+        missing_file.status_code,
+        invalid_id.status_code,
+        invalid_search.status_code,
+    ] == [status_code] * 4
 
 
 async def test_no_visitor_endpoint_asks_for_a_token(

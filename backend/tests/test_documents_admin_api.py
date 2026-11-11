@@ -400,6 +400,37 @@ async def test_a_failed_replacement_leaves_the_old_version_active(
     )
 
 
+async def test_a_replacement_that_runs_out_of_retries_leaves_the_old_version_active(
+    client: httpx.AsyncClient,
+    admin_headers: dict[str, str],
+    session_factory: SessionFactory,
+    settings: Settings,
+) -> None:
+    document = await ingest(client, admin_headers, session_factory, settings, SMALL)
+    providers = dataclasses.replace(build_providers(settings), embeddings=_FlakyEmbeddings(99))
+
+    await upload(client, admin_headers, SMALL_V2, document_id=document["id"])
+    async with session_factory() as session:
+        await session.execute(
+            update(Job).where(Job.status == JobStatus.QUEUED).values(max_attempts=2)
+        )
+        await session.commit()
+    await run_jobs(session_factory, settings, providers)
+    await _make_jobs_due(session_factory)
+    await run_jobs(session_factory, settings, providers)
+
+    detail = (
+        await client.get(f"/api/admin/documents/{document['id']}", headers=admin_headers)
+    ).json()
+    assert detail["active_version"]["version_number"] == 1
+    assert detail["latest_version"]["version_number"] == 2
+    assert detail["latest_version"]["indexing_status"] == "failed"
+    assert "HTTP 429" in detail["latest_version"]["indexing_error"]
+    passages = await _search(client, admin_headers, "days from delivery")
+    assert "Thirty days" in passages[0]["content"]
+    assert all("Forty-five" not in passage["content"] for passage in passages)
+
+
 async def test_an_older_upload_indexed_late_does_not_replace_a_newer_one(
     client: httpx.AsyncClient,
     admin_headers: dict[str, str],
@@ -778,8 +809,22 @@ async def test_a_visitor_cannot_read_upload_replace_delete_or_search_documents(
     )
 
 
-async def test_an_anonymous_upload_is_refused_before_its_body_is_read(
-    client: httpx.AsyncClient, session_factory: SessionFactory
+@pytest.mark.parametrize(
+    ("authorization", "status_code", "message"),
+    [
+        (None, 401, "Administrator token required."),
+        ("Bearer wrong-token", 403, "Administrator token rejected."),
+    ],
+    ids=["no-token", "wrong-token"],
+)
+@pytest.mark.parametrize("target", ["new-document", "new-version"])
+async def test_a_visitor_upload_is_refused_before_its_body_is_read(
+    client: httpx.AsyncClient,
+    session_factory: SessionFactory,
+    authorization: str | None,
+    status_code: int,
+    message: str,
+    target: str,
 ) -> None:
     body, content_type = _multipart(b"# Huge\n\n" + b"a" * 400_000)
     chunks_sent = 0
@@ -790,13 +835,18 @@ async def test_an_anonymous_upload_is_refused_before_its_body_is_read(
             chunks_sent += 1
             yield body[start : start + 16_384]
 
-    response = await client.post(
-        "/api/admin/documents", headers={"Content-Type": content_type}, content=stream()
-    )
+    headers = {"Content-Type": content_type}
+    if authorization is not None:
+        headers["Authorization"] = authorization
+    path = "/api/admin/documents"
+    if target == "new-version":
+        path += "/00000000-0000-4000-8000-000000000001/versions"
+    response = await client.post(path, headers=headers, content=stream())
 
-    assert response.status_code == 401
-    assert response.headers["www-authenticate"] == "Bearer"
-    assert response.json()["error"]["message"] == "Administrator token required."
+    assert response.status_code == status_code
+    if status_code == 401:
+        assert response.headers["www-authenticate"] == "Bearer"
+    assert response.json()["error"]["message"] == message
     assert chunks_sent == 0
 
 

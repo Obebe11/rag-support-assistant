@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from app.core.config import Settings
 from app.core.db import SessionFactory
 from app.models.enums import JobStatus
+from app.models.inquiries import InquiryDelivery
 from app.models.jobs import Job
 from app.providers.crm.base import LeadPayload, LeadResult
 from app.providers.crm.simulated import SimulatedCRMProvider
@@ -31,6 +32,7 @@ from tests.inquiry_support import (
     make_jobs_due,
     purchase_body,
 )
+from tests.kb import ask, start_conversation
 
 pytestmark = pytest.mark.usefixtures("session_factory")
 
@@ -121,6 +123,41 @@ async def test_nothing_is_sent_to_the_crm_before_confirmation(
 
     assert await worker.run_once() is False
     assert crm.calls == []
+
+
+async def test_a_draft_made_in_the_chat_is_not_sent_even_when_the_visitor_agrees(
+    client: httpx.AsyncClient, session_factory: SessionFactory, settings: Settings
+) -> None:
+    """The chat only fills a draft. Confirmation is a separate, explicit request."""
+    crm = ScriptedCRM()
+    worker = delivery_worker(session_factory, settings, crm)
+    conversation_id = await start_conversation(client)
+
+    for message in (
+        "I'd like to order 20 standing desks by the end of March.",
+        "Jane Doe",
+        "jane.doe@example.com",
+        "Yes, that's correct",
+    ):
+        reply = await ask(client, message, conversation_id)
+        assert reply["answer_type"] == "inquiry_offer", message
+
+    inquiry = reply["inquiry"]
+    assert (inquiry["status"], inquiry["missing_fields"]) == ("draft", [])
+    assert inquiry["delivery"] is None
+    assert await worker.run_once() is False
+    assert crm.calls == []
+    async with session_factory() as session:
+        assert (await session.execute(select(func.count()).select_from(Job))).scalar_one() == 0
+        assert (
+            await session.execute(select(func.count()).select_from(InquiryDelivery))
+        ).scalar_one() == 0
+
+    # The same draft is sent once the visitor confirms it.
+    confirmed = await client.post(f"/api/inquiries/{inquiry['id']}/confirm")
+    assert confirmed.status_code == 200
+    assert await worker.run_once() is True
+    assert [lead.contact.email for lead in crm.calls] == ["jane.doe@example.com"]
 
 
 async def test_temporary_failure_is_retried_without_a_duplicate(
@@ -283,6 +320,26 @@ async def test_undelivered_inquiry_survives_a_restart(
     assert len(crm.state.records) == 1
 
 
+async def test_a_delivery_queued_while_nothing_was_running_is_sent_after_a_restart(
+    session_factory: SessionFactory, settings: Settings
+) -> None:
+    """Confirmed before any worker existed, and the API process ended in between."""
+    async with api_client(settings) as client:
+        inquiry_id = await create_confirmed(client, purchase_body())
+        queued = await get_delivery(client, inquiry_id)
+
+    crm = SimulatedCRMProvider()
+    worker = delivery_worker(session_factory, settings, crm, worker_id="started-later")
+    assert await worker.run_once() is True
+    async with api_client(settings) as client:
+        delivered = await get_delivery(client, inquiry_id)
+
+    assert (queued["status"], queued["attempt_count"]) == ("pending", 0)
+    assert delivered["status"] == "delivered"
+    assert _outcomes(delivered) == [(1, "succeeded")]
+    assert list(crm.state.records) == [f"inquiry:{inquiry_id}"]
+
+
 async def test_delivery_recovers_after_the_worker_dies_mid_attempt(
     client: httpx.AsyncClient, session_factory: SessionFactory, settings: Settings
 ) -> None:
@@ -431,6 +488,23 @@ async def test_two_workers_delivering_the_same_inquiry_create_one_record(
     assert len(crm.state.contacts) == 1
     assert len(crm.state.records) == 1
     assert _outcomes(delivery) == [(2, "succeeded")], "the late result was rolled back"
+
+
+async def test_a_delivered_inquiry_cannot_be_retried(
+    client: httpx.AsyncClient, session_factory: SessionFactory, settings: Settings
+) -> None:
+    crm = ScriptedCRM()
+    worker = delivery_worker(session_factory, settings, crm)
+    inquiry_id = await create_confirmed(client, purchase_body())
+    await worker.run_once()
+
+    retry = await client.post(f"/api/inquiries/{inquiry_id}/delivery/retry")
+
+    assert retry.status_code == 409
+    assert "delivered" in retry.json()["error"]["message"]
+    assert await worker.run_once() is False
+    assert len(crm.calls) == 1
+    assert (await get_delivery(client, inquiry_id))["status"] == "delivered"
 
 
 async def test_second_job_for_a_delivered_inquiry_does_not_call_the_crm(

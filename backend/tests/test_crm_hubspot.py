@@ -9,7 +9,7 @@ import json
 import logging
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -19,6 +19,7 @@ from pydantic import SecretStr
 from app.core.config import CRMProviderMode, Settings
 from app.core.db import SessionFactory
 from app.models.enums import InquiryKind
+from app.providers import factory
 from app.providers.crm.access import CRMAccessMonitor
 from app.providers.crm.base import LeadContact, LeadPayload
 from app.providers.crm.hubspot import (
@@ -791,3 +792,158 @@ async def test_rejected_token_fails_the_delivery_at_once(
     assert "revoked" not in delivery["last_error"]
     assert "jane.doe@example.com" not in delivery["last_error"]
     assert hubspot.contacts == {}
+
+
+@pytest.mark.usefixtures("session_factory")
+@pytest.mark.parametrize(
+    ("status", "category", "summary"),
+    [
+        (429, "RATE_LIMITS", "HubSpot rate limit reached"),
+        (502, "BAD_GATEWAY", "HubSpot is temporarily unavailable"),
+        (503, "SERVICE_UNAVAILABLE", "HubSpot is temporarily unavailable"),
+    ],
+    ids=["429", "502", "503"],
+)
+async def test_temporary_hubspot_errors_are_retried_after_the_backoff(
+    session_factory: SessionFactory,
+    settings: Settings,
+    hubspot: FakeHubSpot,
+    status: int,
+    category: str,
+    summary: str,
+) -> None:
+    hubspot.fail_once("POST", UPSERT, _error(status, category, "Try again later."))
+    worker = delivery_worker(session_factory, settings, hubspot.provider())
+    async with api_client(
+        settings, crm_provider=CRMProviderMode.HUBSPOT, hubspot_access_token=SecretStr(TOKEN)
+    ) as client:
+        inquiry_id = await create_confirmed(client, purchase_body())
+        await worker.run_once()
+        waiting = await get_delivery(client, inquiry_id)
+        ran_before_the_backoff_passed = await worker.run_once()
+        await make_jobs_due(session_factory)
+        await worker.run_once()
+        delivered = await get_delivery(client, inquiry_id)
+
+    assert (waiting["status"], waiting["failure_reason"]) == ("pending", None)
+    assert f"{summary} while saving the contact (HTTP {status}:" in waiting["last_error"]
+    # The first retry waits for the configured base delay.
+    wait = datetime.fromisoformat(waiting["next_attempt_at"]) - datetime.fromisoformat(
+        waiting["attempts"][0]["finished_at"]
+    )
+    assert wait == timedelta(seconds=settings.job_backoff_base_seconds)
+    assert ran_before_the_backoff_passed is False
+    assert delivered["status"] == "delivered"
+    assert [a["outcome"] for a in delivered["attempts"]] == ["failed", "succeeded"]
+    assert (len(hubspot.contacts), len(hubspot.notes)) == (1, 1)
+
+
+@pytest.mark.usefixtures("session_factory")
+@pytest.mark.parametrize(
+    ("path", "status", "category", "message", "summary"),
+    [
+        (
+            UPSERT,
+            400,
+            "VALIDATION_ERROR",
+            "Property values were not valid: jane.doe@example.com for Jane Doe of Acme Corp, "
+            "phone +1 555 010 2030.",
+            "HubSpot rejected the request",
+        ),
+        (
+            NOTES,
+            403,
+            "MISSING_SCOPES",
+            "This app hasn't been granted all required scopes.",
+            "HubSpot denied access",
+        ),
+    ],
+    ids=["400-on-the-contact", "403-on-the-note"],
+)
+async def test_permanent_hubspot_errors_fail_at_once_and_a_manual_retry_delivers(
+    session_factory: SessionFactory,
+    settings: Settings,
+    hubspot: FakeHubSpot,
+    path: str,
+    status: int,
+    category: str,
+    message: str,
+    summary: str,
+) -> None:
+    hubspot.fail_once("POST", path, _error(status, category, message))
+    worker = delivery_worker(session_factory, settings, hubspot.provider())
+    async with api_client(
+        settings, crm_provider=CRMProviderMode.HUBSPOT, hubspot_access_token=SecretStr(TOKEN)
+    ) as client:
+        inquiry_id = await create_confirmed(client, purchase_body())
+        await worker.run_once()
+        failed = await get_delivery(client, inquiry_id)
+        await make_jobs_due(session_factory)
+        retried_on_its_own = await worker.run_once()
+
+        # The cause is fixed on the HubSpot side; a person asks for another attempt.
+        retry = await client.post(f"/api/inquiries/{inquiry_id}/delivery/retry")
+        await worker.run_once()
+        delivered = await get_delivery(client, inquiry_id)
+
+    assert (failed["status"], failed["failure_reason"]) == ("failed", "permanent_error")
+    assert (failed["attempt_count"], failed["next_attempt_at"]) == (1, None)
+    assert f"{summary} while" in failed["last_error"]
+    assert f"(HTTP {status}: {category}" in failed["last_error"]
+    for stored in (failed["last_error"], failed["attempts"][0]["error"]):
+        for private in (TOKEN, "jane.doe@example.com", "Jane Doe", "Acme Corp", "555 010 2030"):
+            assert private not in stored
+    assert retried_on_its_own is False
+    assert retry.status_code == 202
+    assert delivered["status"] == "delivered"
+    assert [a["outcome"] for a in delivered["attempts"]] == ["failed", "succeeded"]
+    assert (len(hubspot.contacts), len(hubspot.notes)) == (1, 1)
+
+
+@pytest.mark.parametrize(
+    ("token", "health_status", "access_state", "message"),
+    [
+        (TOKEN, "ok", "ok", "HubSpot"),
+        ("revoked-service-key", "degraded", "failed", "HubSpot rejected the access token"),
+    ],
+    ids=["valid-token", "rejected-token"],
+)
+async def test_the_access_check_at_startup_is_reported_by_health(
+    settings: Settings,
+    hubspot: FakeHubSpot,
+    monkeypatch: pytest.MonkeyPatch,
+    token: str,
+    health_status: str,
+    access_state: str,
+    message: str,
+) -> None:
+    """The real startup path: the provider is built from settings and checked before serving."""
+
+    class WiredHubSpot(HubSpotCRMProvider):
+        @classmethod
+        def from_settings(cls, settings: Settings) -> "WiredHubSpot":
+            assert settings.hubspot_access_token is not None
+            return cls(access_token=settings.hubspot_access_token, transport=hubspot.transport())
+
+    monkeypatch.setitem(factory.CRM_PROVIDERS, CRMProviderMode.HUBSPOT, WiredHubSpot)
+    async with api_client(
+        settings,
+        crm_provider=CRMProviderMode.HUBSPOT,
+        hubspot_access_token=SecretStr(token),
+        crm_access_check_enabled=True,
+    ) as client:
+        checked_at_startup = len(hubspot.requests)
+        health = await client.get("/api/health")
+        conversation = await client.post("/api/conversations")
+
+    body = health.json()
+    crm = body["providers"]["crm"]
+    assert checked_at_startup > 0
+    assert health.status_code == 200
+    assert body["status"] == health_status
+    assert (crm["mode"], crm["live"]) == ("hubspot", True)
+    assert crm["access"]["state"] == access_state
+    assert message in crm["access"]["message"]
+    assert token not in health.text
+    # A failed check does not stop the API: visitors can still talk to the assistant.
+    assert conversation.status_code == 201
