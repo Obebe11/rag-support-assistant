@@ -4,23 +4,32 @@ Base URL, API key and model come from configuration only. Owner: T3.
 """
 
 from collections.abc import Sequence
-from typing import ClassVar, Self
+from typing import Any, ClassVar, Self
 
+import httpx
 from pydantic import SecretStr
 
 from app.core.config import LLMProviderMode, Settings
-from app.providers.errors import ProviderNotImplementedError
-from app.providers.llm.base import ChatMessage, LLMProvider, LLMResponse
+from app.providers.llm.base import ChatMessage, LLMProvider, LLMResponse, TokenUsage
+from app.providers.openai_http import OpenAICompatibleClient
 
 
 class OpenAICompatibleLLMProvider(LLMProvider):
     mode: ClassVar[LLMProviderMode] = LLMProviderMode.OPENAI_COMPATIBLE
     live: ClassVar[bool] = True
 
-    def __init__(self, *, base_url: str, api_key: SecretStr | None, model: str) -> None:
-        self._base_url = base_url
-        self._api_key = api_key
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        api_key: SecretStr | None,
+        model: str,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self._model = model
+        self._http = OpenAICompatibleClient(
+            label="LLM", base_url=base_url, api_key=api_key, transport=transport
+        )
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Self:
@@ -44,4 +53,42 @@ class OpenAICompatibleLLMProvider(LLMProvider):
         max_output_tokens: int | None = None,
         json_output: bool = False,
     ) -> LLMResponse:
-        raise ProviderNotImplementedError("The OpenAI-compatible LLM provider")
+        payload: dict[str, Any] = {
+            "model": self._model,
+            "messages": [
+                {"role": message.role, "content": message.content} for message in messages
+            ],
+        }
+        if temperature is not None:
+            payload["temperature"] = temperature
+        if max_output_tokens is not None:
+            payload["max_tokens"] = max_output_tokens
+        if json_output:
+            payload["response_format"] = {"type": "json_object"}
+        body = await self._http.post_json("chat/completions", payload)
+
+        choices = body.get("choices")
+        first = choices[0] if isinstance(choices, list) and choices else None
+        message = first.get("message") if isinstance(first, dict) else None
+        text = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(text, str) or not text.strip():
+            raise self._http.malformed("the first choice has no text.")
+        model = body.get("model")
+        return LLMResponse(
+            text=text,
+            model=model if isinstance(model, str) and model else self._model,
+            usage=_read_usage(body.get("usage")),
+        )
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
+
+
+def _read_usage(usage: Any) -> TokenUsage | None:
+    if not isinstance(usage, dict):
+        return None
+    input_tokens = usage.get("prompt_tokens")
+    output_tokens = usage.get("completion_tokens")
+    if not isinstance(input_tokens, int) or not isinstance(output_tokens, int):
+        return None
+    return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)

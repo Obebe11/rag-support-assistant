@@ -7,7 +7,8 @@
           "grounded",
           "knowledge_gap",
           "clarification",
-          "inquiry_offer"
+          "inquiry_offer",
+          "refusal"
         ],
         "title": "AnswerType",
         "type": "string"
@@ -1421,6 +1422,17 @@
           },
           "role": {
             "$ref": "#/components/schemas/MessageRole"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessageUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set on assistant messages: provider modes, model, token counts, timing and the retrieved passages."
           }
         },
         "required": [
@@ -1440,6 +1452,131 @@
         ],
         "title": "MessageRole",
         "type": "string"
+      },
+      "MessageUsage": {
+        "description": "Measured facts about how an assistant reply was produced.",
+        "properties": {
+          "embedding_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingProviderMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embedding_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Model"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "LLM prompt tokens, when the API reports them.",
+            "title": "Input Tokens"
+          },
+          "llm_live": {
+            "description": "False when the reply was assembled from retrieved passages in local mode, without an LLM.",
+            "title": "Llm Live",
+            "type": "boolean"
+          },
+          "llm_mode": {
+            "$ref": "#/components/schemas/LLMProviderMode"
+          },
+          "llm_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Model"
+          },
+          "llm_time_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Part of the response time spent on the LLM call.",
+            "title": "Llm Time Ms"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the reply differs from what the LLM proposed, if it does.",
+            "title": "Note"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "LLM completion tokens, when the API reports them.",
+            "title": "Output Tokens"
+          },
+          "response_time_ms": {
+            "description": "Time to produce the reply, in milliseconds.",
+            "title": "Response Time Ms",
+            "type": "integer"
+          },
+          "retrieval_time_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Part of the response time spent on embedding and search.",
+            "title": "Retrieval Time Ms"
+          },
+          "retrieved": {
+            "description": "The passages retrieval returned for this message, best first. Empty when the reply needed no retrieval.",
+            "items": {
+              "$ref": "#/components/schemas/RetrievedSource"
+            },
+            "title": "Retrieved",
+            "type": "array"
+          }
+        },
+        "required": [
+          "llm_mode",
+          "llm_live",
+          "response_time_ms"
+        ],
+        "title": "MessageUsage",
+        "type": "object"
       },
       "Notes": {
         "maxLength": 2000,
@@ -1475,6 +1612,250 @@
         "maximum": 1000000.0,
         "minimum": 1.0,
         "type": "integer"
+      },
+      "RetrievalSearchRequest": {
+        "properties": {
+          "query": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "top_k": {
+            "default": 5,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Top K",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "RetrievalSearchRequest",
+        "type": "object"
+      },
+      "RetrievalSearchResponse": {
+        "properties": {
+          "embedding_model": {
+            "description": "Only chunks embedded by this model are searched.",
+            "title": "Embedding Model",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RetrievedPassage"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "embedding_model",
+          "items"
+        ],
+        "title": "RetrievalSearchResponse",
+        "type": "object"
+      },
+      "RetrievedPassage": {
+        "description": "A chunk of an active document version, as retrieval returns it.",
+        "properties": {
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "chunk_index": {
+            "title": "Chunk Index",
+            "type": "integer"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "document_version_id": {
+            "format": "uuid",
+            "title": "Document Version Id",
+            "type": "string"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "1-based page, for PDF sources.",
+            "title": "Page Number"
+          },
+          "rank": {
+            "description": "1-based position in the result.",
+            "title": "Rank",
+            "type": "integer"
+          },
+          "score": {
+            "description": "Cosine similarity. It ranks passages; it does not measure whether a passage answers the query.",
+            "title": "Score",
+            "type": "number"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Section heading path, for example \"Returns > Refunds\".",
+            "title": "Section"
+          },
+          "section_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Exact text of the heading directly above the passage.",
+            "title": "Section Title"
+          },
+          "source_filename": {
+            "title": "Source Filename",
+            "type": "string"
+          },
+          "version_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Label"
+          },
+          "version_number": {
+            "title": "Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rank",
+          "score",
+          "document_id",
+          "document_title",
+          "document_version_id",
+          "version_number",
+          "source_filename",
+          "chunk_id",
+          "chunk_index",
+          "content"
+        ],
+        "title": "RetrievedPassage",
+        "type": "object"
+      },
+      "RetrievedSource": {
+        "description": "One passage that retrieval returned for a visitor message.",
+        "properties": {
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "document_version_id": {
+            "format": "uuid",
+            "title": "Document Version Id",
+            "type": "string"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "1-based page, for PDF sources.",
+            "title": "Page Number"
+          },
+          "rank": {
+            "description": "1-based position in the retrieval result.",
+            "title": "Rank",
+            "type": "integer"
+          },
+          "score": {
+            "description": "Retrieval similarity. It ranks passages; it does not measure whether the answer is correct.",
+            "title": "Score",
+            "type": "number"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Section heading path.",
+            "title": "Section"
+          },
+          "source_filename": {
+            "title": "Source Filename",
+            "type": "string"
+          },
+          "version_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Label"
+          },
+          "version_number": {
+            "title": "Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rank",
+          "score",
+          "document_id",
+          "document_title",
+          "document_version_id",
+          "version_number",
+          "source_filename",
+          "chunk_id"
+        ],
+        "title": "RetrievedSource",
+        "type": "object"
       },
       "Timeline": {
         "maxLength": 200,
@@ -1658,6 +2039,83 @@
           }
         ],
         "summary": "Upload a new document",
+        "tags": [
+          "admin: documents"
+        ]
+      }
+    },
+    "/api/admin/documents/search": {
+      "post": {
+        "description": "Return the passages retrieval finds for a query, best first, without an answer.\n\nOnly active versions of documents that are not deleted are searched. Use it\nto inspect retrieval, for example to check that an expected source is among\nthe top results.",
+        "operationId": "search_documents",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrievalSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrievalSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
+        "summary": "Search the active knowledge base",
         "tags": [
           "admin: documents"
         ]
@@ -2110,7 +2568,7 @@
     },
     "/api/conversations/{conversation_id}/messages": {
       "post": {
-        "description": "Store the visitor message and return the assistant's reply.\n\nThe reply's `answer_type` tells the UI what to show:\n\n- `grounded`: an answer with `citations`.\n- `knowledge_gap`: the documents do not answer the question; offer a human handoff.\n- `clarification`: the assistant asks for more detail.\n- `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to\n  review and confirm.",
+        "description": "Store the visitor message and return the assistant's reply.\n\nThe reply's `answer_type` tells the UI what to show:\n\n- `grounded`: an answer with `citations`.\n- `knowledge_gap`: the documents do not answer the question; offer a human handoff.\n- `clarification`: the assistant asks for more detail.\n- `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to\n  review and confirm.\n- `refusal`: the visitor asked for something outside the assistant's role,\n  such as revealing its instructions or changing documents.\n\nThe reply uses the earlier messages of the conversation, so a follow-up\nquestion can depend on them. `usage` reports how the reply was produced:\nprovider modes, model, token counts, timing and the retrieved passages.\n\n`503` means the LLM or embedding provider failed. Nothing is stored then:\nsend the message again.",
         "operationId": "create_message",
         "parameters": [
           {
@@ -2164,6 +2622,16 @@
               }
             },
             "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Send a visitor message and get the assistant's reply",

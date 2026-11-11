@@ -25,6 +25,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/documents/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search the active knowledge base
+         * @description Return the passages retrieval finds for a query, best first, without an answer.
+         *
+         *     Only active versions of documents that are not deleted are searched. Use it
+         *     to inspect retrieval, for example to check that an expected source is among
+         *     the top results.
+         */
+        post: operations["search_documents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/documents/{document_id}": {
         parameters: {
             query?: never;
@@ -143,6 +167,15 @@ export interface paths {
          *     - `clarification`: the assistant asks for more detail.
          *     - `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to
          *       review and confirm.
+         *     - `refusal`: the visitor asked for something outside the assistant's role,
+         *       such as revealing its instructions or changing documents.
+         *
+         *     The reply uses the earlier messages of the conversation, so a follow-up
+         *     question can depend on them. `usage` reports how the reply was produced:
+         *     provider modes, model, token counts, timing and the retrieved passages.
+         *
+         *     `503` means the LLM or embedding provider failed. Nothing is stored then:
+         *     send the message again.
          */
         post: operations["create_message"];
         delete?: never;
@@ -292,7 +325,7 @@ export interface components {
          * @description How the assistant answered a visitor message.
          * @enum {string}
          */
-        AnswerType: "grounded" | "knowledge_gap" | "clarification" | "inquiry_offer";
+        AnswerType: "grounded" | "knowledge_gap" | "clarification" | "inquiry_offer" | "refusal";
         /** Body_replace_document */
         Body_replace_document: {
             /**
@@ -837,12 +870,66 @@ export interface components {
             /** @description The inquiry offered with this assistant message, in its current state. It is a draft until the visitor confirms it. */
             inquiry?: components["schemas"]["InquiryRead"] | null;
             role: components["schemas"]["MessageRole"];
+            /** @description Set on assistant messages: provider modes, model, token counts, timing and the retrieved passages. */
+            usage?: components["schemas"]["MessageUsage"] | null;
         };
         /**
          * MessageRole
          * @enum {string}
          */
         MessageRole: "user" | "assistant";
+        /**
+         * MessageUsage
+         * @description Measured facts about how an assistant reply was produced.
+         */
+        MessageUsage: {
+            embedding_mode?: components["schemas"]["EmbeddingProviderMode"] | null;
+            /** Embedding Model */
+            embedding_model?: string | null;
+            /**
+             * Input Tokens
+             * @description LLM prompt tokens, when the API reports them.
+             */
+            input_tokens?: number | null;
+            /**
+             * Llm Live
+             * @description False when the reply was assembled from retrieved passages in local mode, without an LLM.
+             */
+            llm_live: boolean;
+            llm_mode: components["schemas"]["LLMProviderMode"];
+            /** Llm Model */
+            llm_model?: string | null;
+            /**
+             * Llm Time Ms
+             * @description Part of the response time spent on the LLM call.
+             */
+            llm_time_ms?: number | null;
+            /**
+             * Note
+             * @description Why the reply differs from what the LLM proposed, if it does.
+             */
+            note?: string | null;
+            /**
+             * Output Tokens
+             * @description LLM completion tokens, when the API reports them.
+             */
+            output_tokens?: number | null;
+            /**
+             * Response Time Ms
+             * @description Time to produce the reply, in milliseconds.
+             */
+            response_time_ms: number;
+            /**
+             * Retrieval Time Ms
+             * @description Part of the response time spent on embedding and search.
+             */
+            retrieval_time_ms?: number | null;
+            /**
+             * Retrieved
+             * @description The passages retrieval returned for this message, best first. Empty when the reply needed no retrieval.
+             */
+            retrieved?: components["schemas"]["RetrievedSource"][];
+        };
         Notes: string;
         Product: string;
         /** ProviderModes */
@@ -852,6 +939,133 @@ export interface components {
             llm: components["schemas"]["LLMProviderStatus"];
         };
         Quantity: number;
+        /** RetrievalSearchRequest */
+        RetrievalSearchRequest: {
+            /** Query */
+            query: string;
+            /**
+             * Top K
+             * @default 5
+             */
+            top_k: number;
+        };
+        /** RetrievalSearchResponse */
+        RetrievalSearchResponse: {
+            /**
+             * Embedding Model
+             * @description Only chunks embedded by this model are searched.
+             */
+            embedding_model: string;
+            /** Items */
+            items: components["schemas"]["RetrievedPassage"][];
+        };
+        /**
+         * RetrievedPassage
+         * @description A chunk of an active document version, as retrieval returns it.
+         */
+        RetrievedPassage: {
+            /**
+             * Chunk Id
+             * Format: uuid
+             */
+            chunk_id: string;
+            /** Chunk Index */
+            chunk_index: number;
+            /** Content */
+            content: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Document Title */
+            document_title: string;
+            /**
+             * Document Version Id
+             * Format: uuid
+             */
+            document_version_id: string;
+            /**
+             * Page Number
+             * @description 1-based page, for PDF sources.
+             */
+            page_number?: number | null;
+            /**
+             * Rank
+             * @description 1-based position in the result.
+             */
+            rank: number;
+            /**
+             * Score
+             * @description Cosine similarity. It ranks passages; it does not measure whether a passage answers the query.
+             */
+            score: number;
+            /**
+             * Section
+             * @description Section heading path, for example "Returns > Refunds".
+             */
+            section?: string | null;
+            /**
+             * Section Title
+             * @description Exact text of the heading directly above the passage.
+             */
+            section_title?: string | null;
+            /** Source Filename */
+            source_filename: string;
+            /** Version Label */
+            version_label?: string | null;
+            /** Version Number */
+            version_number: number;
+        };
+        /**
+         * RetrievedSource
+         * @description One passage that retrieval returned for a visitor message.
+         */
+        RetrievedSource: {
+            /**
+             * Chunk Id
+             * Format: uuid
+             */
+            chunk_id: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Document Title */
+            document_title: string;
+            /**
+             * Document Version Id
+             * Format: uuid
+             */
+            document_version_id: string;
+            /**
+             * Page Number
+             * @description 1-based page, for PDF sources.
+             */
+            page_number?: number | null;
+            /**
+             * Rank
+             * @description 1-based position in the retrieval result.
+             */
+            rank: number;
+            /**
+             * Score
+             * @description Retrieval similarity. It ranks passages; it does not measure whether the answer is correct.
+             */
+            score: number;
+            /**
+             * Section
+             * @description Section heading path.
+             */
+            section?: string | null;
+            /** Source Filename */
+            source_filename: string;
+            /** Version Label */
+            version_label?: string | null;
+            /** Version Number */
+            version_number: number;
+        };
         Timeline: string;
     };
     responses: never;
@@ -972,6 +1186,66 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    search_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetrievalSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetrievalSearchResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1322,6 +1596,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

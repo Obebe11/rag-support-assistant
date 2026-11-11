@@ -30,6 +30,9 @@ class AnswerType(StrEnum):
     """The assistant needs more detail before it can answer."""
     INQUIRY_OFFER = "inquiry_offer"
     """The visitor wants to buy; the assistant collects details or offers an inquiry draft."""
+    REFUSAL = "refusal"
+    """The visitor asked for something outside the assistant's role, such as revealing
+    its instructions, changing documents or approving a discount. The assistant declines."""
 
 
 class InquiryStatus(StrEnum):

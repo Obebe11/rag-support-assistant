@@ -2,8 +2,9 @@
 
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.models.enums import IndexingStatus
 from app.schemas.common import ApiModel
@@ -49,3 +50,39 @@ class DocumentDetail(DocumentRead):
 class DocumentList(BaseModel):
     items: list[DocumentRead]
     total: int
+
+
+class RetrievalSearchRequest(BaseModel):
+    query: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)]
+    top_k: int = Field(default=5, ge=1, le=50)
+
+
+class RetrievedPassage(BaseModel):
+    """A chunk of an active document version, as retrieval returns it."""
+
+    rank: int = Field(description="1-based position in the result.")
+    score: float = Field(
+        description="Cosine similarity. It ranks passages; it does not measure whether "
+        "a passage answers the query."
+    )
+    document_id: uuid.UUID
+    document_title: str
+    document_version_id: uuid.UUID
+    version_number: int
+    version_label: str | None = None
+    source_filename: str
+    chunk_id: uuid.UUID
+    chunk_index: int
+    section: str | None = Field(
+        default=None, description='Section heading path, for example "Returns > Refunds".'
+    )
+    section_title: str | None = Field(
+        default=None, description="Exact text of the heading directly above the passage."
+    )
+    page_number: int | None = Field(default=None, description="1-based page, for PDF sources.")
+    content: str
+
+
+class RetrievalSearchResponse(BaseModel):
+    embedding_model: str = Field(description="Only chunks embedded by this model are searched.")
+    items: list[RetrievedPassage]

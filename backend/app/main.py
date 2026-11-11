@@ -10,6 +10,7 @@ from fastapi.routing import APIRoute
 from app import __version__
 from app.api.errors import register_error_handlers
 from app.api.router import api_router
+from app.api.upload_guard import UploadGuardMiddleware
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_session_factory
 from app.core.logging import configure_logging
@@ -62,6 +63,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     register_error_handlers(app)
+    # Added before CORS, so CORS stays the outer layer and also covers the guard's replies.
+    app.add_middleware(UploadGuardMiddleware, settings=settings)
     if settings.cors_allowed_origins:
         app.add_middleware(
             CORSMiddleware,

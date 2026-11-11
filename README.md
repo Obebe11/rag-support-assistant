@@ -2,7 +2,7 @@
 
 An open-source demo of an AI support assistant that answers from company documents, cites its sources, and hands qualified leads to a CRM.
 
-Status: foundation only. The repository has the project structure, the database schema, the API contract, provider interfaces, the background job queue and a frontend shell. Chat, document indexing, inquiries and CRM delivery are declared in the API but not implemented yet: those endpoints return `501`.
+Status: in development. The repository has the project structure, the database schema, the API contract, provider interfaces, the background job queue and a frontend shell. The knowledge base (document upload, indexing, retrieval) and the chat with cited answers are implemented in the backend.
 
 - [Architecture](docs/architecture.md)
 - [API contract (OpenAPI)](docs/openapi.json)
@@ -17,6 +17,7 @@ Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), Node.js 22 or later
 make setup              # install backend and frontend dependencies
 cp .env.example .env    # optional: every setting has a local default
 make dev                # database, migrations, API, worker and frontend
+make seed               # load the demo knowledge base (Northline Office Equipment)
 make check              # linters, type checks, tests and the frontend build
 ```
 
