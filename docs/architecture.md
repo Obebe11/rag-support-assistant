@@ -29,6 +29,7 @@ frontend/
     styles/       design tokens and base styles
 docs/
   architecture.md
+  inquiries.md    inquiry kinds, delivery, the simulated CRM, HubSpot
   openapi.json    the API contract, exported from the backend
 knowledge-base/   demo document corpus (separate task)
 evals/            evaluation cases and reports (separate task)
@@ -50,7 +51,7 @@ There is no Redis, Celery or workflow engine. Inquiry delivery to the CRM runs i
 
 ## Data model
 
-One migration, `0001`, creates the whole schema.
+Migration `0001` creates the whole schema. Migration `0002` adds `inquiries.kind`.
 
 | Table | Purpose |
 | --- | --- |
@@ -59,7 +60,7 @@ One migration, `0001`, creates the whole schema.
 | `chunks` | A retrievable passage of one version: text, section heading or page number, `embedding`, `embedding_model`. |
 | `conversations` | A visitor chat. |
 | `messages` | A visitor or assistant message: role, text, `answer_type`, `citations` (JSON snapshot), the offered inquiry, usage facts. `seq` gives the order. |
-| `inquiries` | A purchase request: product, quantity, timeline, contact details, notes, status `draft` → `confirmed`. |
+| `inquiries` | A purchase request or a human handoff request (`kind`): product, quantity, timeline, contact details, notes, status `draft` → `confirmed`. See [inquiries.md](inquiries.md). |
 | `inquiry_deliveries` | Delivery of one confirmed inquiry to the CRM: status, CRM mode, idempotency key, attempt count, last error, next attempt time, CRM contact and record IDs. One row per inquiry. |
 | `inquiry_delivery_attempts` | One row per delivery attempt: outcome, error, start and finish time. |
 | `jobs` | The background job queue. |
@@ -148,7 +149,11 @@ intent = await detector.assess(session, conversation_id=..., turns=[...])
 
 `InquiryIntent` says whether the visitor wants to buy, which fields are already extracted, which required fields are missing, and which draft the inquiry module saved. The detector may write through the chat's session but must not commit, so the draft and the reply are stored together.
 
-The default detector reports no intent. T4 returns the real one from `app/services/inquiries/intent.py`; routes receive it as `InquiryIntentDetectorDep`.
+The detector comes from `app/services/inquiries/intent.py`; routes receive it as `InquiryIntentDetectorDep`. It keeps one purchase draft per conversation up to date and never confirms it. `NoOpInquiryIntentDetector` in the seam module reports no intent and is there for tests.
+
+To put an inquiry into a reply, the chat can serialize it with `read_inquiries` or `inquiry_to_read` from `app/services/inquiries/service.py`.
+
+Inquiry kinds, delivery statuses, retries, the simulated CRM and the HubSpot integration with its limits are described in [inquiries.md](inquiries.md).
 
 ## Background jobs
 
@@ -225,4 +230,5 @@ Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 
 - The Docker Compose setup was written without a Docker host and has not been run yet.
 - FastAPI reads a request body before it checks the admin token, so an unauthenticated client can make the API read an upload before it answers `401`. The nginx configuration caps the body size; T3 enforces `MAX_UPLOAD_BYTES` in the upload endpoints.
-- What "human handoff" does after a knowledge gap is not part of the contract yet; today it is a UI offer only.
+- A human handoff is an inquiry with `kind: "handoff"`: the UI creates it after a knowledge gap, the visitor confirms it, and it is delivered to the CRM like a purchase inquiry. Nobody is notified by email.
+- The HubSpot integration has not been verified on a live account; see [inquiries.md](inquiries.md).

@@ -27,7 +27,11 @@ async def test_health_reports_local_and_simulated_modes_as_not_live(
         "providers": {
             "llm": {"mode": "local", "live": False, "model": None},
             "embeddings": {"mode": "local", "live": False, "model": None},
-            "crm": {"mode": "simulated", "live": False},
+            "crm": {
+                "mode": "simulated",
+                "live": False,
+                "access": {"state": "unchecked", "message": None, "checked_at": None},
+            },
         },
     }
 
@@ -57,7 +61,11 @@ async def test_health_reports_configured_api_providers_as_live(settings: Setting
             "live": True,
             "model": "example-embedding-model",
         },
-        "crm": {"mode": "hubspot", "live": True},
+        "crm": {
+            "mode": "hubspot",
+            "live": True,
+            "access": {"state": "unchecked", "message": None, "checked_at": None},
+        },
     }
     assert "llm-key" not in response.text
     assert "hubspot-token" not in response.text

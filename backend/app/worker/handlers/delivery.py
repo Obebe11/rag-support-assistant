@@ -1,10 +1,13 @@
 """Inquiry delivery jobs. Owner: T4.
 
-Register the handler for `app.worker.job_types.DELIVER_INQUIRY` here.
+The handler for `app.worker.job_types.DELIVER_INQUIRY` lives in
+`app.services.inquiries.delivery`.
 """
 
+from app.services.inquiries.delivery import deliver_inquiry
+from app.worker import job_types
 from app.worker.registry import JobRegistry
 
 
 def register(registry: JobRegistry) -> None:
-    """No delivery handler yet."""
+    registry.register(job_types.DELIVER_INQUIRY, deliver_inquiry)

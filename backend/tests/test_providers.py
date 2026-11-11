@@ -3,7 +3,6 @@
 import uuid
 
 import pytest
-from fastapi import FastAPI
 from pydantic import SecretStr, ValidationError
 
 from app.core.config import CRMProviderMode, EmbeddingProviderMode, LLMProviderMode
@@ -132,11 +131,12 @@ def test_secrets_are_not_printed() -> None:
     assert "super-secret" not in repr(settings)
 
 
-async def test_default_inquiry_intent_detector_reports_no_intent(
-    app: FastAPI, session_factory: SessionFactory
+async def test_no_op_inquiry_intent_detector_reports_no_intent(
+    session_factory: SessionFactory,
 ) -> None:
-    detector = app.state.inquiry_intent_detector
-    assert isinstance(detector, NoOpInquiryIntentDetector)
+    """The seam's fallback. The application wires the real detector (see
+    tests/test_inquiry_intent.py)."""
+    detector = NoOpInquiryIntentDetector()
 
     async with session_factory() as session:
         intent = await detector.assess(

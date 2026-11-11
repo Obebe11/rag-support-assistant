@@ -164,6 +164,9 @@ export interface paths {
          *
          *     A provider with `live: false` runs in local or simulated mode. The UI must
          *     label it and must not present it as a working LLM or a live CRM integration.
+         *
+         *     `providers.crm.access` is the result of the CRM access check. The status is
+         *     `degraded` when the database is unavailable or the CRM access check failed.
          */
         get: operations["get_health"];
         put?: never;
@@ -183,7 +186,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create an inquiry draft */
+        /**
+         * Create an inquiry draft
+         * @description Create a draft of either kind. Returns 404 for an unknown `conversation_id`.
+         */
         post: operations["create_inquiry"];
         delete?: never;
         options?: never;
@@ -319,12 +325,34 @@ export interface components {
             version_label?: string | null;
         };
         /**
+         * CRMAccessState
+         * @enum {string}
+         */
+        CRMAccessState: "ok" | "failed" | "unchecked";
+        /**
+         * CRMAccessStatus
+         * @description The CRM access check: credentials, permissions and the fields the integration
+         *     writes. It runs at startup and is refreshed periodically.
+         */
+        CRMAccessStatus: {
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Message
+             * @description What the check found. Never contains credentials.
+             */
+            message?: string | null;
+            state: components["schemas"]["CRMAccessState"];
+        };
+        /**
          * CRMProviderMode
          * @enum {string}
          */
         CRMProviderMode: "simulated" | "hubspot";
         /** CRMProviderStatus */
         CRMProviderStatus: {
+            /** @description Result of the CRM access check. The server always sends it; it is optional in the contract so that older clients stay valid. */
+            access?: components["schemas"]["CRMAccessStatus"] | null;
             /**
              * Live
              * @description True when inquiries are sent to a real CRM. False when delivery is simulated.
@@ -444,7 +472,26 @@ export interface components {
              */
             started_at: string;
         };
-        /** DeliveryRead */
+        /**
+         * DeliveryFailureReason
+         * @description Why a delivery stopped in the `failed` status.
+         * @enum {string}
+         */
+        DeliveryFailureReason: "permanent_error" | "attempts_exhausted";
+        /**
+         * DeliveryRead
+         * @description Delivery state of a confirmed inquiry.
+         *
+         *     How to read `status`:
+         *
+         *     - `pending` with `attempt_count` 0: queued, no attempt yet.
+         *     - `in_progress`: an attempt is running.
+         *     - `pending` with `attempt_count` above 0: the last attempt failed with a temporary
+         *       error; the next automatic attempt starts at `next_attempt_at`.
+         *     - `delivered`: the CRM confirmed the record.
+         *     - `failed`: no automatic attempt is left; see `failure_reason`. A manual retry is
+         *       possible.
+         */
         DeliveryRead: {
             /** Attempt Count */
             attempt_count: number;
@@ -457,6 +504,8 @@ export interface components {
             crm_record_id?: string | null;
             /** Delivered At */
             delivered_at?: string | null;
+            /** @description Set only while `status` is `failed`. */
+            failure_reason?: components["schemas"]["DeliveryFailureReason"] | null;
             /** Last Attempt At */
             last_attempt_at?: string | null;
             /** Last Error */

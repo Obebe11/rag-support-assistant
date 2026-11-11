@@ -119,7 +119,29 @@ class DeliveryAttemptRead(ApiModel):
     finished_at: datetime
 
 
+class DeliveryFailureReason(StrEnum):
+    """Why a delivery stopped in the `failed` status."""
+
+    PERMANENT_ERROR = "permanent_error"
+    """The CRM rejected the request. A retry fails the same way until the cause is fixed."""
+    ATTEMPTS_EXHAUSTED = "attempts_exhausted"
+    """Every automatic attempt hit a temporary error. A manual retry may succeed."""
+
+
 class DeliveryRead(ApiModel):
+    """Delivery state of a confirmed inquiry.
+
+    How to read `status`:
+
+    - `pending` with `attempt_count` 0: queued, no attempt yet.
+    - `in_progress`: an attempt is running.
+    - `pending` with `attempt_count` above 0: the last attempt failed with a temporary
+      error; the next automatic attempt starts at `next_attempt_at`.
+    - `delivered`: the CRM confirmed the record.
+    - `failed`: no automatic attempt is left; see `failure_reason`. A manual retry is
+      possible.
+    """
+
     status: DeliveryStatus
     crm_mode: CRMProviderMode
     live: bool = Field(
@@ -127,6 +149,9 @@ class DeliveryRead(ApiModel):
     )
     attempt_count: int
     last_error: str | None = None
+    failure_reason: DeliveryFailureReason | None = Field(
+        default=None, description="Set only while `status` is `failed`."
+    )
     last_attempt_at: datetime | None = None
     next_attempt_at: datetime | None = None
     delivered_at: datetime | None = None
