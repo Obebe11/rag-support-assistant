@@ -1,30 +1,34 @@
-"""One valid request for every endpoint that is declared but not implemented yet.
+"""Requests for the declared API operations, derived from the OpenAPI schema.
 
-When you implement an endpoint, remove its case from this list and add real tests.
+The lists come from the application itself, so a new route is covered by the
+access tests without anyone having to remember to add it.
 """
 
-from dataclasses import dataclass, field
-from typing import Any
+from fastapi import FastAPI
 
 ANY_ID = "00000000-0000-4000-8000-000000000001"
-MARKDOWN_FILE = {"file": ("returns.md", b"# Returns\n\nThirty days.\n", "text/markdown")}
+ADMIN_PREFIX = "/api/admin/"
 
 
-@dataclass(frozen=True, slots=True)
-class ApiCase:
-    method: str
-    path: str
-    json: Any = None
-    files: dict[str, tuple[str, bytes, str]] | None = None
-    data: dict[str, str] = field(default_factory=dict)
+def declared_operations(app: FastAPI) -> list[tuple[str, str]]:
+    """Every declared operation as (method, path), with path parameters filled in."""
+    operations = []
+    for path, item in app.openapi()["paths"].items():
+        concrete = path
+        for parameter in ("conversation_id", "inquiry_id", "document_id"):
+            concrete = concrete.replace(f"{{{parameter}}}", ANY_ID)
+        assert "{" not in concrete, f"Unknown path parameter in {path}"
+        operations += [(method.upper(), concrete) for method in item]
+    return sorted(operations)
 
-    @property
-    def id(self) -> str:
-        return f"{self.method} {self.path}"
+
+def admin_operations(app: FastAPI) -> list[tuple[str, str]]:
+    return [(method, path) for method, path in declared_operations(app) if is_admin(path)]
 
 
-# Every declared endpoint is implemented. The lists stay for the contract tests,
-# which run once per case.
-VISITOR_STUBS: list[ApiCase] = []
+def visitor_operations(app: FastAPI) -> list[tuple[str, str]]:
+    return [(method, path) for method, path in declared_operations(app) if not is_admin(path)]
 
-ADMIN_STUBS: list[ApiCase] = []
+
+def is_admin(path: str) -> bool:
+    return path.startswith(ADMIN_PREFIX)

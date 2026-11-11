@@ -366,6 +366,34 @@ async def test_an_expired_lease_on_the_final_attempt_fails_the_job(
     assert dead_job.attempts == 1
 
 
+async def test_a_job_abandoned_on_its_final_attempt_is_reported_to_the_caller(
+    session_factory: SessionFactory,
+) -> None:
+    dead = await _enqueue(session_factory, max_attempts=1, run_at=NOW - timedelta(minutes=1))
+    retried = await _enqueue(session_factory, max_attempts=2, run_at=NOW - timedelta(seconds=30))
+    await _claim(session_factory, "worker-a", now=NOW - timedelta(minutes=1))
+    await _claim(session_factory, "worker-a", now=NOW - timedelta(seconds=30))
+    expired = NOW + timedelta(seconds=LEASE_SECONDS + 1)
+
+    abandoned: list[Job] = []
+    async with session_factory() as session:
+        claimed = await queue.claim_next(
+            session,
+            worker_id="worker-b",
+            lease_seconds=LEASE_SECONDS,
+            now=expired,
+            abandoned=abandoned,
+        )
+        await session.commit()
+
+    # A job with an attempt left is taken over; only the one without is given up.
+    assert claimed is not None
+    assert claimed.id == retried
+    assert [(job.id, job.status, job.last_error) for job in abandoned] == [
+        (dead, JobStatus.FAILED, queue.ABANDONED_ERROR)
+    ]
+
+
 async def test_requeue_gives_a_failed_job_fresh_attempts(session_factory: SessionFactory) -> None:
     job_id = await _enqueue(session_factory, max_attempts=1)
     await _claim(session_factory)

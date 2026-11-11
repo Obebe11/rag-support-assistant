@@ -1,13 +1,22 @@
 """Document indexing jobs. Owner: T3.
 
-Registers the handler for `app.worker.job_types.INDEX_DOCUMENT_VERSION`.
+Registers the handler for `app.worker.job_types.INDEX_DOCUMENT_VERSION`, and the
+hook that fails a version whose worker died during the final attempt.
 """
 
 import uuid
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.base import JSONDict
-from app.services.documents.indexing import IndexingFailedError, index_document_version
+from app.models.jobs import Job
+from app.services.documents.indexing import (
+    IndexingFailedError,
+    fail_abandoned_indexing,
+    index_document_version,
+)
 from app.worker import job_types
+from app.worker.queue import ABANDONED_ERROR
 from app.worker.registry import JobContext, JobRegistry, PermanentJobError
 
 
@@ -34,5 +43,16 @@ async def index_version(context: JobContext) -> JSONDict:
         raise PermanentJobError(str(exc)) from exc
 
 
+async def index_version_abandoned(session: AsyncSession, job: Job) -> None:
+    """The worker died during the final attempt: the version will not be indexed."""
+    try:
+        version_id = uuid.UUID(str(job.payload.get("document_version_id")))
+    except ValueError:
+        return
+    await fail_abandoned_indexing(session, version_id, job.last_error or ABANDONED_ERROR)
+
+
 def register(registry: JobRegistry) -> None:
-    registry.register(job_types.INDEX_DOCUMENT_VERSION, index_version)
+    registry.register(
+        job_types.INDEX_DOCUMENT_VERSION, index_version, on_abandoned=index_version_abandoned
+    )

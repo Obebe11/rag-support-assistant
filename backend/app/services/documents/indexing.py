@@ -200,3 +200,29 @@ async def _record_failure(
     version.indexing_error = error[:MAX_ERROR_LENGTH]
     await session.commit()
     logger.warning("Indexing of document version %s failed: %s", version_id, error)
+
+
+async def fail_abandoned_indexing(session: AsyncSession, version_id: uuid.UUID, error: str) -> bool:
+    """Mark a version as failed when its indexing job ended without a final result.
+
+    A worker that dies in the middle of indexing leaves the version in
+    `indexing`. The queue retries the job, and the next attempt sets the status
+    again. When the worker dies during the final attempt, no attempt follows, so
+    nothing would ever move the version out of `indexing`. The queue calls this
+    then. The previous version of the document, if any, stays active.
+
+    Returns True when the status changed. Does not commit.
+    """
+    version = await session.get(
+        DocumentVersion, version_id, with_for_update=True, populate_existing=True
+    )
+    if version is None or version.indexing_status not in (
+        IndexingStatus.PENDING,
+        IndexingStatus.INDEXING,
+    ):
+        return False
+    version.indexing_status = IndexingStatus.FAILED
+    version.indexing_error = error[:MAX_ERROR_LENGTH]
+    await session.flush()
+    logger.warning("Indexing of document version %s was abandoned: %s", version_id, error)
+    return True

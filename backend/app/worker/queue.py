@@ -21,6 +21,7 @@ from app.models.jobs import Job
 
 DEFAULT_MAX_ATTEMPTS = 5
 MAX_ERROR_LENGTH = 2000
+ABANDONED_ERROR = "The worker stopped during the final attempt."
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +92,7 @@ async def claim_next(
     worker_id: str,
     lease_seconds: float,
     now: datetime | None = None,
+    abandoned: list[Job] | None = None,
 ) -> Job | None:
     """Lock the next due job for this worker, or return None.
 
@@ -98,6 +100,10 @@ async def claim_next(
     running but its lease expired (the worker that held it is gone). Rows locked
     by another transaction are skipped, so workers never wait on each other.
     The caller must commit to publish the claim.
+
+    A job whose worker died during its final attempt is failed here, without
+    running its handler again. Each such job is appended to `abandoned`, so the
+    caller can bring the record the job was working on in line before it commits.
     """
     now = now or _utcnow()
     lease_expired_before = now - timedelta(seconds=lease_seconds)
@@ -120,11 +126,13 @@ async def claim_next(
             return None
         if job.status is JobStatus.RUNNING and job.attempts >= job.max_attempts:
             job.status = JobStatus.FAILED
-            job.last_error = "The worker stopped during the final attempt."
+            job.last_error = ABANDONED_ERROR
             job.finished_at = now
             job.locked_by = None
             job.locked_at = None
             await session.flush()
+            if abandoned is not None:
+                abandoned.append(job)
             continue
         job.status = JobStatus.RUNNING
         job.attempts += 1

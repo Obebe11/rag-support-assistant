@@ -2,11 +2,10 @@ import json
 from pathlib import Path
 
 import httpx
-import pytest
 from fastapi import FastAPI
 
 from scripts.export_openapi import OPENAPI_PATH, render_openapi
-from tests.api_cases import ADMIN_STUBS, ANY_ID, VISITOR_STUBS, ApiCase
+from tests.api_cases import ANY_ID
 
 EXPECTED_OPERATIONS = {
     ("GET", "/api/health"),
@@ -24,6 +23,7 @@ EXPECTED_OPERATIONS = {
     ("GET", "/api/admin/documents/{document_id}"),
     ("POST", "/api/admin/documents/{document_id}/versions"),
     ("DELETE", "/api/admin/documents/{document_id}"),
+    ("POST", "/api/admin/documents/search"),
     ("GET", "/api/admin/inquiries"),
 }
 
@@ -81,59 +81,6 @@ def test_committed_openapi_file_is_up_to_date(app: FastAPI) -> None:
     assert committed == render_openapi(app), (
         "docs/openapi.json is stale. Run `make openapi` and commit the result."
     )
-
-
-def test_every_stub_case_targets_a_declared_operation(app: FastAPI) -> None:
-    """A stub case for a path that left the contract is a stale test."""
-    declared = {
-        (
-            method,
-            path.replace("{conversation_id}", ANY_ID)
-            .replace("{inquiry_id}", ANY_ID)
-            .replace("{document_id}", ANY_ID),
-        )
-        for method, path in _operations(app.openapi())
-    }
-    cases = {(case.method, case.path) for case in VISITOR_STUBS + ADMIN_STUBS}
-
-    assert cases <= declared
-
-
-async def _send(
-    client: httpx.AsyncClient, case: ApiCase, headers: dict[str, str] | None = None
-) -> httpx.Response:
-    return await client.request(
-        case.method,
-        case.path,
-        json=case.json,
-        files=case.files,
-        data=case.data or None,
-        headers=headers,
-    )
-
-
-@pytest.mark.parametrize("case", VISITOR_STUBS, ids=lambda case: case.id)
-async def test_visitor_stub_returns_501_in_the_common_format(
-    client: httpx.AsyncClient, case: ApiCase
-) -> None:
-    response = await _send(client, case)
-
-    assert response.status_code == 501
-    body = response.json()
-    assert set(body) == {"error"}
-    assert body["error"]["code"] == "not_implemented"
-    assert body["error"]["message"].endswith("is not implemented yet.")
-    assert body["error"]["details"] == []
-
-
-@pytest.mark.parametrize("case", ADMIN_STUBS, ids=lambda case: case.id)
-async def test_admin_stub_returns_501_in_the_common_format(
-    client: httpx.AsyncClient, admin_headers: dict[str, str], case: ApiCase
-) -> None:
-    response = await _send(client, case, admin_headers)
-
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
 
 
 async def test_validation_errors_use_the_common_format(client: httpx.AsyncClient) -> None:

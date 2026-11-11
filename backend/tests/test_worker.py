@@ -2,10 +2,11 @@
 
 import asyncio
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.db import SessionFactory
@@ -237,6 +238,99 @@ async def test_result_of_a_worker_that_lost_its_lease_is_discarded(
     assert job.locked_by == "another-worker"
     assert job.result is None
     assert await _count_conversations(session_factory) == 0
+
+
+async def _abandon_on_the_final_attempt(
+    session_factory: SessionFactory, job_type: str
+) -> uuid.UUID:
+    """A job whose only attempt was claimed by a worker that then died."""
+    job_id = await _enqueue(session_factory, job_type, max_attempts=1)
+    async with session_factory() as session:
+        claimed = await queue.claim_next(session, worker_id="dead-worker", lease_seconds=300)
+        assert claimed is not None
+        assert claimed.id == job_id
+        claimed.locked_at = datetime.now(UTC) - timedelta(days=1)
+        await session.commit()
+    return job_id
+
+
+def _never_run(job_type: str) -> JobHandler:
+    async def handler(context: JobContext) -> JSONDict | None:
+        raise AssertionError(f"The handler of {job_type} must not run again.")
+
+    return handler
+
+
+async def test_a_job_abandoned_on_its_final_attempt_fails_together_with_its_hook(
+    session_factory: SessionFactory, settings: Settings
+) -> None:
+    job_id = await _abandon_on_the_final_attempt(session_factory, "test.job")
+    seen: list[tuple[uuid.UUID, JobStatus, str | None]] = []
+
+    async def on_abandoned(session: AsyncSession, job: Job) -> None:
+        seen.append((job.id, job.status, job.last_error))
+        session.add(Conversation())
+
+    registry = JobRegistry()
+    registry.register("test.job", _never_run("test.job"), on_abandoned=on_abandoned)
+    worker = Worker(
+        session_factory=session_factory,
+        registry=registry,
+        settings=settings,
+        providers=build_providers(settings),
+        worker_id="test-worker",
+    )
+
+    assert await worker.run_once() is False, "nothing is left to run"
+
+    assert seen == [(job_id, JobStatus.FAILED, queue.ABANDONED_ERROR)]
+    assert (await _get(session_factory, job_id)).status is JobStatus.FAILED
+    # The hook's write is committed with the failure of the job.
+    assert await _count_conversations(session_factory) == 1
+
+
+async def test_a_failing_abandoned_hook_neither_stops_the_queue_nor_keeps_its_writes(
+    session_factory: SessionFactory, settings: Settings
+) -> None:
+    dead = await _abandon_on_the_final_attempt(session_factory, "test.dead")
+    healthy = await _enqueue(session_factory, "test.healthy")
+
+    async def on_abandoned(session: AsyncSession, job: Job) -> None:
+        session.add(Conversation())
+        await session.flush()
+        raise RuntimeError("the hook is broken")
+
+    async def handler(context: JobContext) -> JSONDict | None:
+        return {"ok": True}
+
+    registry = JobRegistry()
+    registry.register("test.dead", _never_run("test.dead"), on_abandoned=on_abandoned)
+    registry.register("test.healthy", handler)
+    worker = Worker(
+        session_factory=session_factory,
+        registry=registry,
+        settings=settings,
+        providers=build_providers(settings),
+        worker_id="test-worker",
+    )
+
+    assert await worker.run_once() is True
+
+    assert (await _get(session_factory, dead)).status is JobStatus.FAILED
+    assert (await _get(session_factory, healthy)).status is JobStatus.SUCCEEDED
+    assert await _count_conversations(session_factory) == 0
+
+
+async def test_a_job_type_without_a_hook_still_fails_when_abandoned(
+    session_factory: SessionFactory, settings: Settings
+) -> None:
+    job_id = await _abandon_on_the_final_attempt(session_factory, "test.job")
+    worker = _worker(session_factory, settings, {"test.job": _never_run("test.job")})
+
+    assert await worker.run_once() is False
+
+    job = await _get(session_factory, job_id)
+    assert (job.status, job.last_error) == (JobStatus.FAILED, queue.ABANDONED_ERROR)
 
 
 async def test_run_forever_drains_the_queue_and_stops_on_request(

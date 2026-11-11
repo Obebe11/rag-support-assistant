@@ -6,10 +6,18 @@ from fastapi import APIRouter
 from sqlalchemy import text
 
 from app import __version__
-from app.api.deps import CRMAccessMonitorDep, SessionFactoryDep, SettingsDep
+from app.api.deps import (
+    CRMAccessMonitorDep,
+    EmbeddingProviderDep,
+    LLMProviderDep,
+    SessionFactoryDep,
+    SettingsDep,
+)
 from app.core.config import Settings
 from app.providers.crm.access import UNCHECKED, CRMAccessSnapshot
-from app.providers.factory import CRM_PROVIDERS, EMBEDDING_PROVIDERS, LLM_PROVIDERS
+from app.providers.embeddings.base import EmbeddingProvider
+from app.providers.factory import CRM_PROVIDERS
+from app.providers.llm.base import LLMProvider
 from app.schemas.health import (
     CRMAccessState,
     CRMAccessStatus,
@@ -25,21 +33,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["health"])
 
 
-def provider_modes(settings: Settings, crm_access: CRMAccessSnapshot = UNCHECKED) -> ProviderModes:
+def provider_modes(
+    settings: Settings,
+    llm: LLMProvider,
+    embeddings: EmbeddingProvider,
+    crm_access: CRMAccessSnapshot = UNCHECKED,
+) -> ProviderModes:
+    """Modes and models of the running providers.
+
+    The LLM and embedding entries are read from the provider objects that
+    answer requests, so `model` here is the value a reply reports in its
+    `usage`: the configured model of a live API, the name of the local
+    embedding scheme, and nothing for the local LLM mode, which runs no model.
+    """
     return ProviderModes(
-        llm=LLMProviderStatus(
-            mode=settings.llm_provider,
-            live=LLM_PROVIDERS[settings.llm_provider].live,
-            model=settings.llm_model if LLM_PROVIDERS[settings.llm_provider].live else None,
-        ),
+        llm=LLMProviderStatus(mode=llm.mode, live=llm.live, model=llm.model_name),
         embeddings=EmbeddingProviderStatus(
-            mode=settings.embedding_provider,
-            live=EMBEDDING_PROVIDERS[settings.embedding_provider].live,
-            model=(
-                settings.embedding_model
-                if EMBEDDING_PROVIDERS[settings.embedding_provider].live
-                else None
-            ),
+            mode=embeddings.mode, live=embeddings.live, model=embeddings.model_name
         ),
         crm=CRMProviderStatus(
             mode=settings.crm_provider,
@@ -55,7 +65,11 @@ def provider_modes(settings: Settings, crm_access: CRMAccessSnapshot = UNCHECKED
 
 @router.get("/health", summary="Service health and provider modes")
 async def get_health(
-    settings: SettingsDep, session_factory: SessionFactoryDep, crm_access: CRMAccessMonitorDep
+    settings: SettingsDep,
+    session_factory: SessionFactoryDep,
+    llm: LLMProviderDep,
+    embeddings: EmbeddingProviderDep,
+    crm_access: CRMAccessMonitorDep,
 ) -> HealthResponse:
     """Report whether the database answers and which provider modes are active.
 
@@ -78,5 +92,5 @@ async def get_health(
         status="ok" if healthy else "degraded",
         version=__version__,
         database="ok" if database_ok else "unavailable",
-        providers=provider_modes(settings, access),
+        providers=provider_modes(settings, llm, embeddings, access),
     )

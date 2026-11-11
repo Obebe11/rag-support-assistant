@@ -16,8 +16,9 @@ backend/
     providers/    LLM, embedding and CRM providers behind interfaces
     services/     business logic (chat, documents, inquiries)
     worker/       background jobs on PostgreSQL
+  evaluation/     evaluation runner: cases, scoring, LLM judge, report
   migrations/     Alembic migrations
-  scripts/        development runner, embedded PostgreSQL, OpenAPI export
+  scripts/        development runner, embedded PostgreSQL, OpenAPI export, seeding, evaluation
   tests/
 frontend/
   src/
@@ -31,8 +32,8 @@ docs/
   architecture.md
   inquiries.md    inquiry kinds, delivery, the simulated CRM, HubSpot
   openapi.json    the API contract, exported from the backend
-knowledge-base/   demo document corpus (separate task)
-evals/            evaluation cases and reports (separate task)
+knowledge-base/   demo document corpus
+evals/            evaluation cases, injection fixtures and reports
 docker-compose.yml, Makefile, .env.example
 ```
 
@@ -117,9 +118,9 @@ An assistant message also carries `usage`: provider modes and models, token coun
 
 Raise `ApiError` (or `NotFoundError`, `ConflictError`, `ValidationApiError`) from `app/api/errors.py`. Declare the possible errors of a route with `responses=error_responses(404, 422)`.
 
-**Stubs.** An endpoint that is not implemented raises `NotImplementedApiError` and returns `501`. The `501` is deliberately absent from OpenAPI, so implementing an endpoint does not change the contract or the generated frontend types. `backend/tests/api_cases.py` lists the remaining stubs (none at the moment); remove a case when you implement its endpoint.
+**Stubs.** Every declared endpoint is implemented. A new endpoint that is declared before it is built raises `NotImplementedApiError` and returns `501`. The `501` is deliberately absent from OpenAPI, so implementing the endpoint does not change the contract or the generated frontend types.
 
-**Admin access.** Everything under `/api/admin` requires `Authorization: Bearer <ADMIN_API_TOKEN>`. No token: `401`. Wrong token, or no token configured on the server: `403`. There are no users or roles.
+**Admin access.** Everything under `/api/admin` requires `Authorization: Bearer <ADMIN_API_TOKEN>`. No token: `401`. Wrong token, or no token configured on the server: `403`. There are no users or roles. `backend/tests/test_admin_auth.py` reads the admin operations from the OpenAPI schema and checks each of them, so a new admin route is covered without a new test.
 
 **Visitor access.** Conversations and inquiries are addressed by random UUIDs and need no login. This is a demo limitation, not an access control model.
 
@@ -137,7 +138,7 @@ Each provider is selected by its own setting. Model IDs, base URLs and keys come
 
 `openai_compatible` works with any API that implements OpenAI-style chat completions and embeddings; it needs `*_BASE_URL` and `*_MODEL`, and `*_API_KEY` if the API requires one. `hubspot` needs `HUBSPOT_ACCESS_TOKEN`. Missing settings stop the application at startup.
 
-`local` and `simulated` work offline, without API keys. They are demo modes: `local` is not a working LLM and `simulated` is not a live CRM integration. Each provider class has a `live` flag; `GET /api/health` reports it, and the UI shows a "Demo mode" banner for every provider that is not live. Deliveries record the CRM mode they ran in.
+`local` and `simulated` work offline, without API keys. They are demo modes: `local` is not a working LLM and `simulated` is not a live CRM integration. Each provider class has a `live` flag; `GET /api/health` reports it, and the UI shows a "Demo mode" banner for every provider that is not live. Health reads the LLM and embedding entries from the provider objects that answer requests, so `model` there is the value a reply reports in `usage`: the configured model of a live API, `local-hashing-v1-1024` for local embeddings, and `null` for the local LLM mode, which runs no model. Deliveries record the CRM mode they ran in.
 
 Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag.
 
@@ -169,7 +170,7 @@ An upload is checked and stored by the API, then indexed by the `documents.index
 - **Upload checks.** `app/api/upload_guard.py` is an ASGI middleware in front of the two upload routes. It checks the admin token and stops a body larger than `MAX_UPLOAD_BYTES` before the application reads it, with or without a `Content-Length` header. The service checks the file size again, the type (`415`) and that the file can be parsed (`422`).
 - **Sections.** A Markdown chunk keeps its heading path below the document title, joined by `" > "`, for example `Returns > How long do I have to return an item?`. HTML comments are removed. A PDF chunk keeps its page number (1-based) and the headings found by font size and weight; lines that repeat at the top or bottom of every page are dropped and tables are rebuilt as Markdown tables.
 - **Chunks.** A chunk never crosses a heading or a page. A section longer than 1,200 characters is split at paragraphs, list items, table rows or sentences; a split table repeats its header row. The text that is embedded is the document title, the heading path and the chunk.
-- **Status.** A version moves through `pending` → `indexing` → `ready` or `failed`. The status and the error text are committed as they change, so `GET /api/admin/documents/{id}` shows them while the job runs or waits for a retry. A parse error fails the job at once; a retryable provider error is retried by the queue, and the version shows `pending` with the last error until the final attempt.
+- **Status.** A version moves through `pending` → `indexing` → `ready` or `failed`. The status and the error text are committed as they change, so `GET /api/admin/documents/{id}` shows them while the job runs or waits for a retry. A parse error fails the job at once; a retryable provider error is retried by the queue, and the version shows `pending` with the last error until the final attempt. If the worker dies while indexing, the version reads `indexing` until the job's lease ends; then another attempt runs, or, when it was the final attempt, the queue fails the job and the version becomes `failed` with the error "The worker stopped during the final attempt." The previous version, if there is one, stays active throughout.
 - **Activation.** The chunks, the `ready` status and the switch of the active version are one transaction under a lock on the document row. A version indexed late does not replace a newer active one. Replacement and deletion keep the old rows: citations of earlier replies point at them, and retrieval skips them.
 
 ### Retrieval
@@ -211,6 +212,10 @@ Known limits of the local mode: it cannot paraphrase, compare or compute; it fin
 
 A manifest entry maps to the stored document as follows: `title` → `documents.title`, `version` → `document_versions.version_label`, the file name of `path` → `source_filename`. `python -m scripts.seed_knowledge_base --map-file map.json` writes `doc_id` with the stored document ID for every entry, and `--manifest` loads another manifest of the same format, such as `evals/fixtures/manifest.json`.
 
+## Evaluation
+
+`make eval` replays the 40 cases in `evals/cases` against the API on isolated databases and writes `results.json` and `report.md`. The runner lives in `backend/evaluation/`; it starts the application in its own process and uses the same HTTP endpoints as a client would. [`evals/README.md`](../evals/README.md) explains the metrics, the review of open checks, the live mode and the LLM judge; [`evals/reports/`](../evals/reports/README.md) holds the runs that were kept.
+
 ## Background jobs
 
 Jobs live in the `jobs` table. API code enqueues a job in the same transaction as the change that needs it:
@@ -225,6 +230,7 @@ await session.commit()
 - **Claiming.** The worker locks the next due job with `FOR UPDATE SKIP LOCKED`, so several workers never take the same job or wait on each other.
 - **Retries.** A handler that raises is retried after a backoff of base, 2× base, 4× base and so on, up to a maximum, until `max_attempts` is reached. `PermanentJobError` fails the job at once. `queue.requeue` gives a failed job a fresh set of attempts (manual retry).
 - **Leases.** A job that stays `running` longer than `JOB_LEASE_SECONDS` is taken over by another worker. A worker that lost its lease cannot record a result, and its handler's writes are rolled back.
+- **Abandoned jobs.** When the lease of a job ends during its final attempt, the queue fails the job without running the handler again. The handler could not record that failure, so a job type can register an `on_abandoned` hook: `registry.register(job_type, handler, on_abandoned=hook)`. The worker calls the hook in the transaction that fails the job. Indexing uses it to mark the document version `failed`. Inquiry delivery needs no hook: the delivery status is brought in line with its job whenever it is read (see [inquiries.md](inquiries.md)).
 - **Transactions.** A handler gets `JobContext` with a session. Its writes are committed together with the job's success and rolled back on failure. To keep a record of a failed attempt, commit before raising.
 - **Handlers must be idempotent.** A job can run more than once.
 
@@ -258,7 +264,7 @@ Three tasks build on the foundation in parallel. Each module has one owner.
 - `backend/app/core/` (settings), `backend/app/api/deps.py`, `backend/app/api/errors.py`, `backend/app/api/router.py`, `backend/app/main.py`
 - provider interfaces (`providers/*/base.py`, `providers/factory.py`, `providers/errors.py`)
 - `backend/app/services/inquiry_intent.py`, `backend/app/worker/` outside `handlers/indexing.py` and `handlers/delivery.py`
-- `backend/tests/conftest.py`, `backend/tests/api_cases.py` (removing your own stub cases is expected)
+- `backend/tests/conftest.py`, `backend/tests/api_cases.py`
 - `.env.example`, `Makefile`, `docker-compose.yml`, `backend/pyproject.toml`, `frontend/package.json`
 
 **Generated files** (`docs/openapi.json`, `frontend/src/api/schema.d.ts`, `backend/uv.lock`, `frontend/pnpm-lock.yaml`) are never merged by hand. On a conflict, take either side and regenerate: `make openapi`, `uv lock`, `pnpm install`.
@@ -274,6 +280,7 @@ make check    # ruff, mypy, pytest, frontend API types, lint, type check, tests,
 make openapi  # regenerate docs/openapi.json and frontend/src/api/schema.d.ts
 make migrate  # apply migrations
 make seed     # load the Northline knowledge base (idempotent)
+make eval     # run the evaluation cases on an isolated database and write a report
 make db       # run only the embedded PostgreSQL and print its DATABASE_URL
 ```
 

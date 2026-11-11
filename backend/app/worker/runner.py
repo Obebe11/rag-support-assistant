@@ -8,9 +8,12 @@ import socket
 import uuid
 from dataclasses import dataclass
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import Settings
 from app.core.db import SessionFactory
 from app.models.base import JSONDict
+from app.models.jobs import Job
 from app.providers.factory import Providers
 from app.worker import queue
 from app.worker.registry import JobContext, JobRegistry, PermanentJobError
@@ -71,11 +74,15 @@ class Worker:
     async def run_once(self) -> bool:
         """Process at most one job. Returns False when no job was due."""
         async with self._session_factory() as session:
+            abandoned: list[Job] = []
             job = await queue.claim_next(
                 session,
                 worker_id=self.worker_id,
                 lease_seconds=self._settings.job_lease_seconds,
+                abandoned=abandoned,
             )
+            for dead in abandoned:
+                await self._settle_abandoned(session, dead)
             claimed = (
                 None
                 if job is None
@@ -86,6 +93,29 @@ class Worker:
             return False
         await self._execute(claimed)
         return True
+
+    async def _settle_abandoned(self, session: AsyncSession, job: Job) -> None:
+        """Let the job type record that its job failed without a final handler run.
+
+        The hook shares the transaction that fails the job. If the hook itself
+        fails, its writes are undone and the job still fails: a broken hook must
+        not stop the worker from polling.
+        """
+        logger.warning(
+            "Job %s (%s) failed: its worker stopped during the final attempt",
+            job.id,
+            job.job_type,
+        )
+        hook = self._registry.abandoned_handler_for(job.job_type)
+        if hook is None:
+            return
+        try:
+            async with session.begin_nested():
+                await hook(session, job)
+        except Exception:
+            logger.exception(
+                "Could not record the failure of abandoned job %s (%s)", job.id, job.job_type
+            )
 
     async def _execute(self, job: _ClaimedJob) -> None:
         handler = self._registry.handler_for(job.job_type)

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.models.base import JSONDict
+from app.models.jobs import Job
 from app.providers.factory import Providers
 
 
@@ -48,17 +49,39 @@ died mid-attempt), so handlers must be idempotent.
 """
 
 
+type AbandonedJobHandler = Callable[[AsyncSession, Job], Awaitable[None]]
+"""Called when the queue gives up on a job whose worker died during the final attempt.
+
+The handler of such a job never ran to the end, so it could not record the
+failure itself. This hook does: it brings the record the job was working on (a
+document version, for example) to a final state. It runs in the transaction
+that marks the job failed and must not commit.
+"""
+
+
 class JobRegistry:
     def __init__(self) -> None:
         self._handlers: dict[str, JobHandler] = {}
+        self._abandoned_handlers: dict[str, AbandonedJobHandler] = {}
 
-    def register(self, job_type: str, handler: JobHandler) -> None:
+    def register(
+        self,
+        job_type: str,
+        handler: JobHandler,
+        *,
+        on_abandoned: AbandonedJobHandler | None = None,
+    ) -> None:
         if job_type in self._handlers:
             raise ValueError(f"A handler for job type {job_type!r} is already registered.")
         self._handlers[job_type] = handler
+        if on_abandoned is not None:
+            self._abandoned_handlers[job_type] = on_abandoned
 
     def handler_for(self, job_type: str) -> JobHandler | None:
         return self._handlers.get(job_type)
+
+    def abandoned_handler_for(self, job_type: str) -> AbandonedJobHandler | None:
+        return self._abandoned_handlers.get(job_type)
 
     @property
     def job_types(self) -> frozenset[str]:

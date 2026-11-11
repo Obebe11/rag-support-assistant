@@ -2,8 +2,10 @@ import httpx
 from pydantic import SecretStr
 
 from app.core.config import CRMProviderMode, EmbeddingProviderMode, LLMProviderMode, Settings
+from app.core.db import SessionFactory
 from app.main import create_app
 from tests.conftest import make_settings
+from tests.kb import ask, ingest
 
 
 async def _get_health(settings: Settings) -> httpx.Response:
@@ -26,7 +28,7 @@ async def test_health_reports_local_and_simulated_modes_as_not_live(
         "database": "ok",
         "providers": {
             "llm": {"mode": "local", "live": False, "model": None},
-            "embeddings": {"mode": "local", "live": False, "model": None},
+            "embeddings": {"mode": "local", "live": False, "model": "local-hashing-v1-1024"},
             "crm": {
                 "mode": "simulated",
                 "live": False,
@@ -81,3 +83,27 @@ async def test_health_is_degraded_when_the_database_is_unreachable(tmp_path_fact
     body = response.json()
     assert body["status"] == "degraded"
     assert body["database"] == "unavailable"
+
+
+async def test_health_and_reply_usage_report_the_same_models(
+    client: httpx.AsyncClient,
+    admin_headers: dict[str, str],
+    session_factory: SessionFactory,
+    settings: Settings,
+) -> None:
+    await ingest(
+        client,
+        admin_headers,
+        session_factory,
+        settings,
+        b"# Returns\n\n## Window\n\nThirty days from delivery.\n",
+    )
+
+    providers = (await client.get("/api/health")).json()["providers"]
+    usage = (await ask(client, "How many days is the return window from delivery?"))["usage"]
+
+    assert usage["embedding_model"] == providers["embeddings"]["model"] == "local-hashing-v1-1024"
+    assert usage["embedding_mode"] == providers["embeddings"]["mode"]
+    assert usage["llm_model"] == providers["llm"]["model"]
+    assert usage["llm_mode"] == providers["llm"]["mode"]
+    assert usage["llm_live"] is providers["llm"]["live"]
