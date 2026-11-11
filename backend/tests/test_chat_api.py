@@ -561,3 +561,31 @@ async def test_a_failing_detector_stores_neither_the_message_nor_a_draft(
         messages = (await session.execute(select(func.count()).select_from(Message))).scalar_one()
         drafts = (await session.execute(select(func.count()).select_from(Inquiry))).scalar_one()
     assert (messages, drafts) == (0, 0)
+
+
+async def test_the_application_detector_turns_a_purchase_request_into_a_draft(
+    client: httpx.AsyncClient, knowledge_base: dict[str, dict[str, Any]]
+) -> None:
+    """The chat and the inquiry module together, as the application wires them."""
+    conversation_id = await start_conversation(client)
+
+    policy = await ask(client, "What is the restocking fee for an opened item?", conversation_id)
+    offered = await ask(
+        client, "I would like to buy 12 LP-420 label printers next month.", conversation_id
+    )
+    completed = await ask(client, "My name is Dana Reyes, dana@example.com", conversation_id)
+
+    # A question about a policy is answered from the documents, not taken for a purchase.
+    assert (policy["answer_type"], policy["inquiry"]) == ("grounded", None)
+    assert offered["answer_type"] == "inquiry_offer"
+    assert offered["inquiry"]["status"] == "draft"
+    assert offered["inquiry"]["quantity"] == 12
+    assert offered["inquiry"]["missing_fields"] == ["contact_name", "contact_email"]
+    assert "your name and your email address" in offered["content"]
+    assert completed["answer_type"] == "inquiry_offer"
+    assert completed["inquiry"]["id"] == offered["inquiry"]["id"]
+    assert completed["inquiry"]["missing_fields"] == []
+    assert "review the details and confirm" in completed["content"]
+    # The earlier message shows the draft as it is now.
+    conversation = (await client.get(f"/api/conversations/{conversation_id}")).json()
+    assert conversation["messages"][3]["inquiry"]["missing_fields"] == []

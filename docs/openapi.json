@@ -82,6 +82,52 @@
         "title": "Body_upload_document",
         "type": "object"
       },
+      "CRMAccessState": {
+        "enum": [
+          "ok",
+          "failed",
+          "unchecked"
+        ],
+        "title": "CRMAccessState",
+        "type": "string"
+      },
+      "CRMAccessStatus": {
+        "description": "The CRM access check: credentials, permissions and the fields the integration\nwrites. It runs at startup and is refreshed periodically.",
+        "properties": {
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the check found. Never contains credentials.",
+            "title": "Message"
+          },
+          "state": {
+            "$ref": "#/components/schemas/CRMAccessState"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "CRMAccessStatus",
+        "type": "object"
+      },
       "CRMProviderMode": {
         "enum": [
           "simulated",
@@ -92,6 +138,17 @@
       },
       "CRMProviderStatus": {
         "properties": {
+          "access": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CRMAccessStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Result of the CRM access check. The server always sends it; it is optional in the contract so that older clients stay valid."
+          },
           "live": {
             "description": "True when inquiries are sent to a real CRM. False when delivery is simulated.",
             "title": "Live",
@@ -394,7 +451,17 @@
         "title": "DeliveryAttemptRead",
         "type": "object"
       },
+      "DeliveryFailureReason": {
+        "description": "Why a delivery stopped in the `failed` status.",
+        "enum": [
+          "permanent_error",
+          "attempts_exhausted"
+        ],
+        "title": "DeliveryFailureReason",
+        "type": "string"
+      },
       "DeliveryRead": {
+        "description": "Delivery state of a confirmed inquiry.\n\nHow to read `status`:\n\n- `pending` with `attempt_count` 0: queued, no attempt yet.\n- `in_progress`: an attempt is running.\n- `pending` with `attempt_count` above 0: the last attempt failed with a temporary\n  error; the next automatic attempt starts at `next_attempt_at`.\n- `delivered`: the CRM confirmed the record.\n- `failed`: no automatic attempt is left; see `failure_reason`. A manual retry is\n  possible.",
         "properties": {
           "attempt_count": {
             "title": "Attempt Count",
@@ -443,6 +510,17 @@
               }
             ],
             "title": "Delivered At"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryFailureReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set only while `status` is `failed`."
           },
           "last_attempt_at": {
             "anyOf": [
@@ -939,6 +1017,11 @@
             ],
             "title": "Conversation Id"
           },
+          "kind": {
+            "$ref": "#/components/schemas/InquiryKind",
+            "default": "purchase",
+            "description": "`purchase` is a purchase request. `handoff` asks a person to answer a question the documents could not; put the question in `notes`. The kind cannot be changed later."
+          },
           "notes": {
             "anyOf": [
               {
@@ -995,6 +1078,15 @@
           "notes"
         ],
         "title": "InquiryField",
+        "type": "string"
+      },
+      "InquiryKind": {
+        "description": "What the visitor asks for. Set when the inquiry is created and never changed.",
+        "enum": [
+          "purchase",
+          "handoff"
+        ],
+        "title": "InquiryKind",
         "type": "string"
       },
       "InquiryList": {
@@ -1068,8 +1160,12 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "$ref": "#/components/schemas/InquiryKind",
+            "description": "Decides which fields are required: `purchase` needs product, quantity, timeline, contact name and contact email; `handoff` needs contact name, contact email and notes (the visitor's question)."
+          },
           "missing_fields": {
-            "description": "Required fields that are still empty. A draft can be confirmed only when this list is empty.",
+            "description": "Fields required for this inquiry's `kind` that are still empty. A draft can be confirmed only when this list is empty.",
             "items": {
               "$ref": "#/components/schemas/InquiryField"
             },
@@ -1132,6 +1228,7 @@
         "required": [
           "id",
           "status",
+          "kind",
           "contact",
           "created_at",
           "updated_at"
@@ -2545,7 +2642,7 @@
     },
     "/api/health": {
       "get": {
-        "description": "Report whether the database answers and which provider modes are active.\n\nA provider with `live: false` runs in local or simulated mode. The UI must\nlabel it and must not present it as a working LLM or a live CRM integration.",
+        "description": "Report whether the database answers and which provider modes are active.\n\nA provider with `live: false` runs in local or simulated mode. The UI must\nlabel it and must not present it as a working LLM or a live CRM integration.\n\n`providers.crm.access` is the result of the CRM access check. The status is\n`degraded` when the database is unavailable or the CRM access check failed.",
         "operationId": "get_health",
         "responses": {
           "200": {
@@ -2567,6 +2664,7 @@
     },
     "/api/inquiries": {
       "post": {
+        "description": "Create a draft of either kind. Returns 404 for an unknown `conversation_id`.",
         "operationId": "create_inquiry",
         "requestBody": {
           "content": {

@@ -2,7 +2,7 @@
 
 Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes the foundation: the repository layout, the data model, the API contract, the provider modes, background jobs, and who owns which module.
 
-Status: the foundation, the knowledge base and the chat are in place. The remaining endpoints are declared in the contract and return `501` until their owner implements them.
+Status: the knowledge base and chat endpoints are implemented and described in [Knowledge base and chat](#knowledge-base-and-chat); inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
 
 ## Repository layout
 
@@ -29,6 +29,7 @@ frontend/
     styles/       design tokens and base styles
 docs/
   architecture.md
+  inquiries.md    inquiry kinds, delivery, the simulated CRM, HubSpot
   openapi.json    the API contract, exported from the backend
 knowledge-base/   demo document corpus (separate task)
 evals/            evaluation cases and reports (separate task)
@@ -50,7 +51,7 @@ There is no Redis, Celery or workflow engine. Inquiry delivery to the CRM runs i
 
 ## Data model
 
-One migration, `0001`, creates the whole schema.
+Migration `0001` creates the whole schema. Migration `0002` adds `inquiries.kind`.
 
 | Table | Purpose |
 | --- | --- |
@@ -59,7 +60,7 @@ One migration, `0001`, creates the whole schema.
 | `chunks` | A retrievable passage of one version: text, section heading or page number, `embedding`, `embedding_model`. |
 | `conversations` | A visitor chat. |
 | `messages` | A visitor or assistant message: role, text, `answer_type`, `citations` (JSON snapshot), the offered inquiry, usage facts. `seq` gives the order. |
-| `inquiries` | A purchase request: product, quantity, timeline, contact details, notes, status `draft` → `confirmed`. |
+| `inquiries` | A purchase request or a human handoff request (`kind`): product, quantity, timeline, contact details, notes, status `draft` → `confirmed`. See [inquiries.md](inquiries.md). |
 | `inquiry_deliveries` | Delivery of one confirmed inquiry to the CRM: status, CRM mode, idempotency key, attempt count, last error, next attempt time, CRM contact and record IDs. One row per inquiry. |
 | `inquiry_delivery_attempts` | One row per delivery attempt: outcome, error, start and finish time. |
 | `jobs` | The background job queue. |
@@ -116,7 +117,7 @@ An assistant message also carries `usage`: provider modes and models, token coun
 
 Raise `ApiError` (or `NotFoundError`, `ConflictError`, `ValidationApiError`) from `app/api/errors.py`. Declare the possible errors of a route with `responses=error_responses(404, 422)`.
 
-**Stubs.** An endpoint that is not implemented raises `NotImplementedApiError` and returns `501`. The `501` is deliberately absent from OpenAPI, so implementing an endpoint does not change the contract or the generated frontend types. `backend/tests/api_cases.py` lists the remaining stubs; remove a case when you implement its endpoint.
+**Stubs.** An endpoint that is not implemented raises `NotImplementedApiError` and returns `501`. The `501` is deliberately absent from OpenAPI, so implementing an endpoint does not change the contract or the generated frontend types. `backend/tests/api_cases.py` lists the remaining stubs (none at the moment); remove a case when you implement its endpoint.
 
 **Admin access.** Everything under `/api/admin` requires `Authorization: Bearer <ADMIN_API_TOKEN>`. No token: `401`. Wrong token, or no token configured on the server: `403`. There are no users or roles.
 
@@ -138,7 +139,7 @@ Each provider is selected by its own setting. Model IDs, base URLs and keys come
 
 `local` and `simulated` work offline, without API keys. They are demo modes: `local` is not a working LLM and `simulated` is not a live CRM integration. Each provider class has a `live` flag; `GET /api/health` reports it, and the UI shows a "Demo mode" banner for every provider that is not live. Deliveries record the CRM mode they ran in.
 
-Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag. The CRM classes are stubs that raise `ProviderNotImplementedError`.
+Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag.
 
 The LLM and embedding providers are implemented. The `openai_compatible` classes share the HTTP client in `app/providers/openai_http.py`: timeouts, connection errors and the statuses 408, 409, 425, 429 and 5xx are retryable `ProviderError`s, other statuses and malformed replies are not. They are tested against a mock transport only and have not been run against a live API. [Knowledge base and chat](#knowledge-base-and-chat) describes the local modes.
 
@@ -152,7 +153,11 @@ intent = await detector.assess(session, conversation_id=..., turns=[...])
 
 `InquiryIntent` says whether the visitor wants to buy, which fields are already extracted, which required fields are missing, and which draft the inquiry module saved. The detector may write through the chat's session but must not commit, so the draft and the reply are stored together.
 
-The default detector reports no intent. T4 returns the real one from `app/services/inquiries/intent.py`; routes receive it as `InquiryIntentDetectorDep`.
+The detector comes from `app/services/inquiries/intent.py`; routes receive it as `InquiryIntentDetectorDep`. It keeps one purchase draft per conversation up to date and never confirms it. `NoOpInquiryIntentDetector` in the seam module reports no intent and is there for tests.
+
+To put an inquiry into a reply, the chat can serialize it with `read_inquiries` or `inquiry_to_read` from `app/services/inquiries/service.py`.
+
+Inquiry kinds, delivery statuses, retries, the simulated CRM and the HubSpot integration with its limits are described in [inquiries.md](inquiries.md).
 
 ## Knowledge base and chat
 
@@ -282,4 +287,5 @@ Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 
 - The Docker Compose setup was written without a Docker host and has not been run yet.
 - FastAPI reads a request body before it checks the admin token. The document upload routes are protected by `app/api/upload_guard.py`, which checks the token and `MAX_UPLOAD_BYTES` before the body is read. Other admin routes take small JSON bodies; the nginx configuration caps the body size for them.
-- What "human handoff" does after a knowledge gap is not part of the contract yet; today it is a UI offer only.
+- A human handoff is an inquiry with `kind: "handoff"`: the UI creates it after a knowledge gap, the visitor confirms it, and it is delivered to the CRM like a purchase inquiry. Nobody is notified by email.
+- The HubSpot integration has not been verified on a live account; see [inquiries.md](inquiries.md).

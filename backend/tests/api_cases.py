@@ -23,15 +23,8 @@ class ApiCase:
         return f"{self.method} {self.path}"
 
 
-VISITOR_STUBS = [
-    ApiCase("POST", "/api/inquiries", json={"product": "Standing desk", "quantity": 20}),
-    ApiCase("GET", f"/api/inquiries/{ANY_ID}"),
-    ApiCase("PATCH", f"/api/inquiries/{ANY_ID}", json={"contact": {"email": "buyer@example.com"}}),
-    ApiCase("POST", f"/api/inquiries/{ANY_ID}/confirm"),
-    ApiCase("GET", f"/api/inquiries/{ANY_ID}/delivery"),
-    ApiCase("POST", f"/api/inquiries/{ANY_ID}/delivery/retry"),
-]
+# Every declared endpoint is implemented. The lists stay for the contract tests,
+# which run once per case.
+VISITOR_STUBS: list[ApiCase] = []
 
-ADMIN_STUBS = [
-    ApiCase("GET", "/api/admin/inquiries"),
-]
+ADMIN_STUBS: list[ApiCase] = []

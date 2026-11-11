@@ -3,9 +3,11 @@
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, ClassVar, Self
 
 from app.core.config import CRMProviderMode, Settings
+from app.models.enums import InquiryKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,15 +20,24 @@ class LeadContact:
 
 @dataclass(frozen=True, slots=True)
 class LeadPayload:
-    """A confirmed inquiry, ready to become a lead in the CRM."""
+    """A confirmed inquiry, ready to become a lead in the CRM.
+
+    A purchase inquiry always carries `product`, `quantity` and `timeline`. A human
+    handoff carries the visitor's question in `notes` and may leave them empty.
+    """
 
     inquiry_id: uuid.UUID
     idempotency_key: str
-    product: str
-    quantity: int
-    timeline: str
+    product: str | None
+    quantity: int | None
+    timeline: str | None
     contact: LeadContact
     notes: str | None = None
+    kind: InquiryKind = InquiryKind.PURCHASE
+    attempt: int = 1
+    """Number of this delivery attempt for the inquiry, starting at 1."""
+    confirmed_at: datetime | None = None
+    """When the visitor confirmed the inquiry."""
 
 
 @dataclass(frozen=True, slots=True)

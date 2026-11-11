@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.errors import ApiError
 from app.core.config import Settings
 from app.core.db import SessionFactory
+from app.providers.crm.access import CRMAccessMonitor
 from app.providers.crm.base import CRMProvider
 from app.providers.embeddings.base import EmbeddingProvider
 from app.providers.factory import Providers
@@ -78,6 +79,14 @@ def get_inquiry_intent_detector(request: Request) -> InquiryIntentDetector:
 
 
 InquiryIntentDetectorDep = Annotated[InquiryIntentDetector, Depends(get_inquiry_intent_detector)]
+
+
+def get_crm_access_monitor(request: Request) -> CRMAccessMonitor:
+    monitor: CRMAccessMonitor = request.app.state.crm_access
+    return monitor
+
+
+CRMAccessMonitorDep = Annotated[CRMAccessMonitor, Depends(get_crm_access_monitor)]
 
 _admin_bearer = HTTPBearer(
     scheme_name="AdminToken",

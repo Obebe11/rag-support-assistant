@@ -2,7 +2,7 @@
 
 An open-source demo of an AI support assistant that answers from company documents, cites its sources, and hands qualified leads to a CRM.
 
-Status: foundation only. The repository has the project structure, the database schema, the API contract, provider interfaces, the background job queue and a frontend shell. Chat, document indexing, inquiries and CRM delivery are declared in the API but not implemented yet: those endpoints return `501`.
+Status: in development. The repository has the project structure, the database schema, the API contract, provider interfaces, the background job queue and a frontend shell. The knowledge base (document upload, indexing, retrieval) and the chat with cited answers are implemented in the backend.
 
 - [Architecture](docs/architecture.md)
 - [API contract (OpenAPI)](docs/openapi.json)

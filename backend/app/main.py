@@ -14,6 +14,7 @@ from app.api.upload_guard import UploadGuardMiddleware
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_session_factory
 from app.core.logging import configure_logging
+from app.providers.crm.access import CRMAccessMonitor
 from app.providers.factory import build_providers
 from app.services.inquiries.intent import build_inquiry_intent_detector
 
@@ -33,9 +34,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory = create_session_factory(engine)
         app.state.providers = providers
         app.state.inquiry_intent_detector = build_inquiry_intent_detector(settings, providers)
+        crm_access = CRMAccessMonitor(
+            providers.crm,
+            enabled=settings.crm_access_check_enabled,
+            interval_seconds=settings.crm_access_check_interval_seconds,
+        )
+        app.state.crm_access = crm_access
+        if settings.crm_access_check_enabled:
+            # Verify CRM credentials and required fields before serving requests.
+            # A failed check does not stop the API: /api/health reports it.
+            await crm_access.refresh()
         try:
             yield
         finally:
+            await crm_access.aclose()
             await providers.aclose()
             await engine.dispose()
 

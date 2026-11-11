@@ -50,6 +50,8 @@ def make_settings(database_url: str, **overrides: object) -> Settings:
         "llm_provider": LLMProviderMode.LOCAL,
         "embedding_provider": EmbeddingProviderMode.LOCAL,
         "crm_provider": CRMProviderMode.SIMULATED,
+        # Tests that cover the CRM access check turn it on with a mock transport.
+        "crm_access_check_enabled": False,
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)  # type: ignore[arg-type]

@@ -197,6 +197,9 @@ export interface paths {
          *
          *     A provider with `live: false` runs in local or simulated mode. The UI must
          *     label it and must not present it as a working LLM or a live CRM integration.
+         *
+         *     `providers.crm.access` is the result of the CRM access check. The status is
+         *     `degraded` when the database is unavailable or the CRM access check failed.
          */
         get: operations["get_health"];
         put?: never;
@@ -216,7 +219,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create an inquiry draft */
+        /**
+         * Create an inquiry draft
+         * @description Create a draft of either kind. Returns 404 for an unknown `conversation_id`.
+         */
         post: operations["create_inquiry"];
         delete?: never;
         options?: never;
@@ -352,12 +358,34 @@ export interface components {
             version_label?: string | null;
         };
         /**
+         * CRMAccessState
+         * @enum {string}
+         */
+        CRMAccessState: "ok" | "failed" | "unchecked";
+        /**
+         * CRMAccessStatus
+         * @description The CRM access check: credentials, permissions and the fields the integration
+         *     writes. It runs at startup and is refreshed periodically.
+         */
+        CRMAccessStatus: {
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Message
+             * @description What the check found. Never contains credentials.
+             */
+            message?: string | null;
+            state: components["schemas"]["CRMAccessState"];
+        };
+        /**
          * CRMProviderMode
          * @enum {string}
          */
         CRMProviderMode: "simulated" | "hubspot";
         /** CRMProviderStatus */
         CRMProviderStatus: {
+            /** @description Result of the CRM access check. The server always sends it; it is optional in the contract so that older clients stay valid. */
+            access?: components["schemas"]["CRMAccessStatus"] | null;
             /**
              * Live
              * @description True when inquiries are sent to a real CRM. False when delivery is simulated.
@@ -477,7 +505,26 @@ export interface components {
              */
             started_at: string;
         };
-        /** DeliveryRead */
+        /**
+         * DeliveryFailureReason
+         * @description Why a delivery stopped in the `failed` status.
+         * @enum {string}
+         */
+        DeliveryFailureReason: "permanent_error" | "attempts_exhausted";
+        /**
+         * DeliveryRead
+         * @description Delivery state of a confirmed inquiry.
+         *
+         *     How to read `status`:
+         *
+         *     - `pending` with `attempt_count` 0: queued, no attempt yet.
+         *     - `in_progress`: an attempt is running.
+         *     - `pending` with `attempt_count` above 0: the last attempt failed with a temporary
+         *       error; the next automatic attempt starts at `next_attempt_at`.
+         *     - `delivered`: the CRM confirmed the record.
+         *     - `failed`: no automatic attempt is left; see `failure_reason`. A manual retry is
+         *       possible.
+         */
         DeliveryRead: {
             /** Attempt Count */
             attempt_count: number;
@@ -490,6 +537,8 @@ export interface components {
             crm_record_id?: string | null;
             /** Delivered At */
             delivered_at?: string | null;
+            /** @description Set only while `status` is `failed`. */
+            failure_reason?: components["schemas"]["DeliveryFailureReason"] | null;
             /** Last Attempt At */
             last_attempt_at?: string | null;
             /** Last Error */
@@ -681,6 +730,11 @@ export interface components {
             contact?: components["schemas"]["ContactInput"] | null;
             /** Conversation Id */
             conversation_id?: string | null;
+            /**
+             * @description `purchase` is a purchase request. `handoff` asks a person to answer a question the documents could not; put the question in `notes`. The kind cannot be changed later.
+             * @default purchase
+             */
+            kind: components["schemas"]["InquiryKind"];
             notes?: components["schemas"]["Notes"] | null;
             product?: components["schemas"]["Product"] | null;
             quantity?: components["schemas"]["Quantity"] | null;
@@ -691,6 +745,12 @@ export interface components {
          * @enum {string}
          */
         InquiryField: "product" | "quantity" | "timeline" | "contact_name" | "contact_email" | "contact_company" | "contact_phone" | "notes";
+        /**
+         * InquiryKind
+         * @description What the visitor asks for. Set when the inquiry is created and never changed.
+         * @enum {string}
+         */
+        InquiryKind: "purchase" | "handoff";
         /** InquiryList */
         InquiryList: {
             /** Items */
@@ -717,9 +777,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** @description Decides which fields are required: `purchase` needs product, quantity, timeline, contact name and contact email; `handoff` needs contact name, contact email and notes (the visitor's question). */
+            kind: components["schemas"]["InquiryKind"];
             /**
              * Missing Fields
-             * @description Required fields that are still empty. A draft can be confirmed only when this list is empty.
+             * @description Fields required for this inquiry's `kind` that are still empty. A draft can be confirmed only when this list is empty.
              */
             missing_fields?: components["schemas"]["InquiryField"][];
             /** Notes */

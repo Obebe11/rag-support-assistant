@@ -48,9 +48,9 @@ from app.services.chat.guard import (
     is_instruction_override,
     strip_embedded_instructions,
 )
-from app.services.chat.inquiry_view import load_inquiry_reads
 from app.services.chat.llm_answer import compose_llm_answer
 from app.services.documents.retrieval import RetrievedChunk, combine, search_by_vector
+from app.services.inquiries.service import read_inquiries
 from app.services.inquiry_intent import ConversationTurn, InquiryIntent, InquiryIntentDetector
 
 CANDIDATE_LIMIT = 20
@@ -305,7 +305,9 @@ async def post_message(
 
 async def to_message_reads(session: AsyncSession, messages: Sequence[Message]) -> list[MessageRead]:
     """API view of messages. An offered inquiry is shown in its current state."""
-    inquiries = await load_inquiry_reads(session, (message.inquiry_id for message in messages))
+    inquiries = await read_inquiries(
+        session, (message.inquiry_id for message in messages if message.inquiry_id is not None)
+    )
     return [
         MessageRead(
             id=message.id,

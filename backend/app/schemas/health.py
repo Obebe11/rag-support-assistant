@@ -1,5 +1,7 @@
 """Health and provider mode schemas."""
 
+from datetime import datetime
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -22,10 +24,35 @@ class EmbeddingProviderStatus(BaseModel):
     model: str | None = None
 
 
+class CRMAccessState(StrEnum):
+    OK = "ok"
+    """The last access check passed."""
+    FAILED = "failed"
+    """The last access check failed; deliveries are likely to fail too."""
+    UNCHECKED = "unchecked"
+    """No access check has finished yet, or the check is disabled."""
+
+
+class CRMAccessStatus(BaseModel):
+    """The CRM access check: credentials, permissions and the fields the integration
+    writes. It runs at startup and is refreshed periodically."""
+
+    state: CRMAccessState
+    message: str | None = Field(
+        default=None, description="What the check found. Never contains credentials."
+    )
+    checked_at: datetime | None = None
+
+
 class CRMProviderStatus(BaseModel):
     mode: CRMProviderMode
     live: bool = Field(
         description="True when inquiries are sent to a real CRM. False when delivery is simulated."
+    )
+    access: CRMAccessStatus | None = Field(
+        default=None,
+        description="Result of the CRM access check. The server always sends it; it is "
+        "optional in the contract so that older clients stay valid.",
     )
 
 
