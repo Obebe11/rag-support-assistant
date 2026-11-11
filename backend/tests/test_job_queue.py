@@ -216,6 +216,20 @@ async def test_success_finishes_the_job_and_stores_the_result(
     assert await _claim(session_factory, now=NOW + timedelta(days=1)) is None
 
 
+async def test_success_without_a_result_stores_sql_null(session_factory: SessionFactory) -> None:
+    job_id = await _enqueue(session_factory)
+    await _claim(session_factory)
+
+    async with session_factory() as session:
+        await queue.mark_succeeded(session, job_id, worker_id="worker-a", now=NOW)
+        await session.commit()
+        without_result = (
+            await session.execute(select(func.count()).select_from(Job).where(Job.result.is_(None)))
+        ).scalar_one()
+
+    assert without_result == 1
+
+
 async def test_failure_requeues_the_job_with_exponential_backoff(
     session_factory: SessionFactory,
 ) -> None:

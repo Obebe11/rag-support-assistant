@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy import BigInteger, ForeignKey, Identity, Index, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -57,7 +56,7 @@ class Message(Base):
         ForeignKey("inquiries.id", ondelete="SET NULL"), index=True
     )
     """The inquiry draft offered with this assistant message, if any."""
-    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    usage: Mapped[JSONDict | None] = mapped_column(JSONB(none_as_null=True))
     """Measured facts about how the reply was produced: provider mode, model,
     token counts, latency."""
 

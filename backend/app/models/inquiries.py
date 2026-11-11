@@ -75,7 +75,7 @@ class InquiryDelivery(Base):
     crm_contact_id: Mapped[str | None] = mapped_column(String(200))
     crm_record_id: Mapped[str | None] = mapped_column(String(200))
     """ID of the CRM record that stores the inquiry details."""
-    crm_details: Mapped[JSONDict | None] = mapped_column(JSONB)
+    crm_details: Mapped[JSONDict | None] = mapped_column(JSONB(none_as_null=True))
     """Other provider-specific facts, for example the record type or URL."""
 
     created_at: Mapped[datetime] = created_at_column()

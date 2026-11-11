@@ -44,7 +44,7 @@ class Job(Base):
     locked_by: Mapped[str | None] = mapped_column(String(200))
     locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str | None] = mapped_column(Text)
-    result: Mapped[JSONDict | None] = mapped_column(JSONB)
+    result: Mapped[JSONDict | None] = mapped_column(JSONB(none_as_null=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     created_at: Mapped[datetime] = created_at_column()
