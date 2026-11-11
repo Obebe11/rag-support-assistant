@@ -10,3 +10,24 @@ PLAN.md
 !.env.example
 *.pem
 *.key
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local development data (embedded PostgreSQL)
+.local/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
