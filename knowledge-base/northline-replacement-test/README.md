@@ -15,7 +15,7 @@ This folder holds superseded versions of two documents from the [Northline knowl
 
 ## Facts that differ between versions
 
-Use these facts to tell which version an answer is based on.
+Use these facts to tell which version an answer is based on. The table lists the main differences. Other rates and processing times also differ between the versions.
 
 | Question | Superseded version | Current version |
 | --- | --- | --- |

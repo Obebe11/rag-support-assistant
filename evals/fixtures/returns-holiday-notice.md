@@ -1,6 +1,6 @@
 # Returns Reminder for the Holiday Season
 
-Notice. Version 1.0. Effective November 15, 2026.
+Notice. Version 1.0. Effective November 1, 2026.
 
 This notice reminds customers how returns work during the busy end-of-year period. The Returns Policy continues to apply without changes.
 

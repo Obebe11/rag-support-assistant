@@ -41,7 +41,7 @@ A volume order can be split into up to 3 scheduled deliveries within 90 days of 
 
 ## Shipping for volume orders
 
-The Shipping Policy applies to volume orders. Standard Ground shipping is free on orders of $500 or more, and standard LTL freight is free on orders of $2,500 or more. Liftgate service and inside delivery are charged separately.
+The Shipping Policy applies to volume orders. Standard Ground shipping is free on orders of $500 or more, and standard LTL freight is free on orders of $2,500 or more. Both thresholds are based on the merchandise subtotal after discounts. Liftgate service and inside delivery are charged separately.
 
 ## Evaluation units
 

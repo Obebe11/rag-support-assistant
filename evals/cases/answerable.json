@@ -193,7 +193,7 @@
           "user": "Our order arrived with a crushed box and the printer inside is cracked. What should we do?",
           "expect": {
             "response_type": "grounded",
-            "reference_answer": "Report the damage to Customer Support within 5 business days of delivery. Include the order number and photos of the item and its packaging, and keep the packaging until the claim is resolved. For problems reported within 5 business days, Northline ships a replacement or issues a refund at no cost to you and pays for return shipping.",
+            "reference_answer": "If the packaging is visibly damaged, the damage should be noted on the carrier's delivery receipt before signing. Report the damage to Customer Support within 5 business days of delivery. Include the order number and photos of the item and its packaging, and keep the packaging until the claim is resolved. For problems reported within 5 business days, Northline ships a replacement or issues a refund at no cost to you and pays for return shipping.",
             "must_include": [
               {
                 "fact": "Damage must be reported within 5 business days of delivery.",
@@ -276,7 +276,7 @@
             "must_include": [
               {
                 "fact": "One account can have up to 10 users.",
-                "match_any": ["10 users", "ten users", "up to 10", "up to ten"]
+                "match_any": ["10 users", "ten users", "10 people", "ten people", "10 logins", "ten logins", "10 separate"]
               }
             ],
             "must_not_include": [],
@@ -305,7 +305,7 @@
             "must_include": [
               {
                 "fact": "Using third-party toner does not by itself void the warranty.",
-                "match_any": ["does not by itself void", "does not void", "doesn't void", "not void", "won't void", "will not void"]
+                "match_any": ["by itself", "on its own", "automatically void", "does not void", "doesn't void", "not void", "won't void", "will not void"]
               },
               {
                 "fact": "Damage or failures caused by third-party supplies are not covered.",
@@ -339,7 +339,7 @@
           "user": "Our P-240 failed four months after delivery. Can you send a replacement before we ship the broken one back?",
           "expect": {
             "response_type": "grounded",
-            "reference_answer": "Yes. Advance replacement is available for the P-240 during the first 12 months of the warranty period. After the Technical Service Desk confirms a hardware fault, Northline ships a replacement unit on the next business day. You need a credit card or a Net 30 credit account on file, and you must ship the defective unit back with the prepaid label within 10 business days of receiving the replacement, or the list price of the replacement is charged.",
+            "reference_answer": "Yes. Advance replacement is available for the P-240 during the first 12 months of the warranty period. Northline ships a replacement unit on the next business day, before you send back the defective unit. To start the claim, contact the Technical Service Desk. You need a credit card or a Net 30 credit account on file, and you must ship the defective unit back with the prepaid label within 10 business days of receiving the replacement, or the list price of the replacement is charged.",
             "must_include": [
               {
                 "fact": "Advance replacement is available for the P-240 during the first 12 months of the warranty period.",
@@ -361,6 +361,18 @@
                 "page": 3,
                 "section": "Advance replacement",
                 "quote": "Advance replacement is available for the P-240 and the LP-420 during the first 12 months of the warranty period."
+              },
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 3,
+                "section": "Advance replacement",
+                "quote": "We ship a replacement unit on the next business day, before you send back the defective unit."
+              },
+              {
+                "doc_id": "northline-warranty-policy",
+                "page": 3,
+                "section": "Advance replacement",
+                "quote": "Ship the defective unit back with the prepaid label within 10 business days of receiving the replacement."
               }
             ]
           }
@@ -625,6 +637,11 @@
                 "doc_id": "northline-product-s300",
                 "section": "Specifications",
                 "quote": "Shipping weight | 36 lb"
+              },
+              {
+                "doc_id": "northline-shipping-policy",
+                "section": "Freight shipping",
+                "quote": "Within the 48 contiguous states, orders with a total shipping weight over 150 lb ship on a pallet by less-than-truckload (LTL) freight."
               },
               {
                 "doc_id": "northline-shipping-policy",

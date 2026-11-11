@@ -31,6 +31,8 @@ We email an order confirmation within 2 business hours of receiving the order.
 
 We do not accept cash or cash on delivery (COD).
 
+Orders of $10,000 or more from customers without an approved Net 30 credit account need a 30% deposit when the order is placed. The balance is due before the order ships. See Volume Orders and Quotes.
+
 ## Net 30 credit accounts
 
 - To apply, complete the credit application from the account portal or request it from billing@northline.example.com. The application asks for your legal business name, two trade references and one bank reference.
@@ -46,7 +48,7 @@ We do not accept cash or cash on delivery (COD).
 
 - You can change or cancel an order at no charge at any time before it ships. Contact Customer Support with your order number.
 - An order that has shipped cannot be canceled. The Returns Policy applies instead.
-- Special-order items are non-stock items and custom configurations that we order at your request. They are marked "Special order" on the quote and on the order confirmation. You can cancel a special-order item at no charge within 24 hours of the order confirmation. After 24 hours, it cannot be canceled or returned.
+- Special-order items are an exception. They are non-stock items and custom configurations that we order at your request. They are marked "Special order" on the quote and on the order confirmation. You can cancel a special-order item at no charge within 24 hours of the order confirmation. After 24 hours, it cannot be canceled or returned.
 
 ## Backorders
 

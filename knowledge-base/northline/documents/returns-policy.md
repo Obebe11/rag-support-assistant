@@ -27,6 +27,7 @@ You can return most items within 30 days of the delivery date. The delivery date
 
 - A laser printer or multifunction printer counts as like-new only if its page counter shows 100 pages or fewer. A printer that has printed more than 100 pages is not eligible for a change-of-mind return.
 - Original shipping charges are not refunded unless the return is caused by a defect, transit damage or our error.
+- An undamaged order that is refused at delivery is handled under the Shipping Policy: the refund is reduced by the return shipping cost and a 15% restocking fee.
 
 ## Return shipping
 
@@ -35,7 +36,7 @@ You can return most items within 30 days of the delivery date. The delivery date
 
 ## Items that cannot be returned
 
-- Consumables such as toner, laminating pouches, labels and shredder oil, once the package has been opened.
+- Consumables such as toner, laminating pouches, labels, shredder oil and waste bags, once the package has been opened. A defective toner cartridge is covered by the Warranty Policy instead.
 - Special-order items, as defined in the Ordering and Payment Terms.
 - Items sold as clearance or final sale.
 - Items returned after the 30-day return window.

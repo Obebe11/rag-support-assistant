@@ -32,7 +32,7 @@
           "user": "It is the S-300 shredder. It was delivered about three years ago.",
           "expect": {
             "response_type": "grounded",
-            "reference_answer": "The S-300 has a 2-year warranty on the machine and a 5-year warranty on the cutting head, both from the delivery date. After three years the machine warranty has ended, but the cutting head is still covered. If the jamming is caused by a defect in the cutting head, the repair is covered. Otherwise it is an out-of-warranty repair: the diagnostic fee is $65.00 per unit and is credited toward the repair if you approve it. The Technical Service Desk can troubleshoot by phone or email at no charge first.",
+            "reference_answer": "The S-300 has a 2-year warranty on the machine and a 5-year warranty on the cutting head, both from the delivery date. After three years the machine warranty has ended, but the cutting head is still covered. If the jamming is caused by a defect in the cutting head, the repair is covered. Damage caused by misuse, such as shredding materials the S-300 is not rated for, is not covered. Otherwise it is an out-of-warranty repair: the diagnostic fee is $65.00 per unit and is credited toward the repair if you approve it. The Technical Service Desk can troubleshoot by phone or email at no charge first.",
             "must_include": [
               {
                 "fact": "The S-300 machine warranty is 2 years, so it has ended.",
@@ -90,7 +90,7 @@
               },
               {
                 "fact": "The return needs an RMA number.",
-                "match_any": ["rma", "return merchandise authorization", "return authorization"]
+                "match_any": ["rma number", "an rma", "return merchandise authorization", "return authorization"]
               }
             ],
             "must_not_include": [],
@@ -112,7 +112,7 @@
           "user": "It has been opened, and we have printed about 40 pages on it.",
           "expect": {
             "response_type": "grounded",
-            "reference_answer": "It can still be returned. A laser printer counts as like-new if its page counter shows 100 pages or fewer, so 40 pages is within the limit. An opened item in like-new condition, with all accessories, manuals and packaging, is refunded at the item price less a 15% restocking fee. You pay the return shipping, and the original shipping charge is not refunded.",
+            "reference_answer": "It can still be returned. A laser printer counts as like-new only if its page counter shows 100 pages or fewer, so about 40 pages is within the limit. An opened item in like-new condition, with all accessories, manuals and packaging, is refunded at the item price less a 15% restocking fee. You pay the return shipping, and the original shipping charge is not refunded.",
             "must_include": [
               {
                 "fact": "A laser printer counts as like-new only if it has printed 100 pages or fewer; 40 pages qualifies.",
@@ -174,7 +174,7 @@
       "category": "multi_turn",
       "title": "Clarify the printer before quoting a toner price",
       "topics": ["products", "service"],
-      "notes": "Two printers use toner, with different cartridges and prices. 'The color one' in the second turn identifies the C-360.",
+      "notes": "Two printers use toner, with different cartridges and prices. 'The color one' in the second turn identifies the C-360. A first reply that lists the toner prices for both printers and asks which one the visitor has also counts as a clarification.",
       "turns": [
         {
           "user": "How much is the replacement toner?",
@@ -407,7 +407,7 @@
           "user": "What if I just refuse the delivery?",
           "expect": {
             "response_type": "grounded",
-            "reference_answer": "If you refuse delivery of an undamaged order, Northline treats it as a return, and the refund is reduced by the return shipping cost and a 15% restocking fee. Accepting the delivery and returning the unopened item with an RMA number avoids the restocking fee.",
+            "reference_answer": "If you refuse delivery of an undamaged order, Northline treats it as a return, and the refund is reduced by the return shipping cost and a 15% restocking fee, even if the package is unopened. Accepting the delivery and returning the unopened item with an RMA number avoids the restocking fee.",
             "must_include": [
               {
                 "fact": "A refused delivery is treated as a return, and the refund is reduced by the return shipping cost and a 15% restocking fee.",
@@ -423,7 +423,7 @@
               {
                 "doc_id": "northline-shipping-policy",
                 "section": "Address changes and refused deliveries",
-                "quote": "If you refuse delivery of an undamaged order, we treat it as a return. The refund is reduced by the return shipping cost and a 15% restocking fee."
+                "quote": "If you refuse delivery of an undamaged order, we treat it as a return. The refund is reduced by the return shipping cost and a 15% restocking fee, even if the package is unopened."
               }
             ]
           }

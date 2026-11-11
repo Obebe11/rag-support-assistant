@@ -6,7 +6,7 @@ SKU: NL-LP420. List price: $219.00.
 
 ## Overview
 
-The LP-420 is a direct thermal label printer for shipping labels, barcodes and product labels up to 4 inches wide. It prints without ink, toner or ribbon.
+The LP-420 is a direct thermal label printer for shipping labels, barcodes and product labels on label stock up to 4.25 inches wide. It prints without ink, toner or ribbon.
 
 ## Specifications
 

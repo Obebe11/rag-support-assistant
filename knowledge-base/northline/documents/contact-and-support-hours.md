@@ -19,6 +19,7 @@ Sales handles product questions, volume orders, quotes and evaluation units.
 - Phone: (800) 555-0117
 - Email: sales@northline.example.com
 - Quote requests: quotes@northline.example.com
+- Orders by email: orders@northline.example.com
 - Hours: Monday through Friday, 8:00 a.m. to 5:00 p.m.
 
 ## Technical Service Desk

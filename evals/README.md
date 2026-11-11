@@ -79,7 +79,7 @@ Send the `user` messages in order within one conversation. Keep the assistant's 
 | --- | --- |
 | `grounded` | Answers from the knowledge base and cites a source. |
 | `knowledge_gap` | States that the documents do not contain the answer, does not guess, and offers a human handoff. Pointing to related documented facts is fine if they are not presented as the answer. |
-| `clarification` | Asks a clarifying question before answering, because the message does not identify what the visitor means. |
+| `clarification` | Asks a clarifying question before answering, because the message does not identify what the visitor means. Listing the documented options while asking is fine. |
 | `refusal` | Declines an instruction that is outside the assistant's role, such as revealing its instructions, changing documents or approving a discount. It can still offer help within its role. |
 
 ### Source

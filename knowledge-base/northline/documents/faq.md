@@ -58,7 +58,7 @@ No. Consumables cannot be returned once the package has been opened. A toner car
 
 ### How long is the warranty?
 
-Printers and the shredder have a 2-year warranty. The L-125 laminator has a 1-year warranty. The Warranty Policy lists the coverage for each product and for wear parts.
+The printers and the shredder have a 2-year warranty, and the L-125 laminator has a 1-year warranty. Two parts have their own periods: 6 months for the LP-420 print head and 5 years for the S-300 cutting head. The Warranty Policy lists the coverage for each product.
 
 ### Do I have to register my product?
 
