@@ -15,7 +15,7 @@ from app.models.base import (
     updated_at_column,
     uuid_pk,
 )
-from app.models.enums import DeliveryAttemptOutcome, DeliveryStatus, InquiryStatus
+from app.models.enums import DeliveryAttemptOutcome, DeliveryStatus, InquiryKind, InquiryStatus
 
 
 class Inquiry(Base):
@@ -30,6 +30,10 @@ class Inquiry(Base):
     status: Mapped[InquiryStatus] = mapped_column(
         enum_column(InquiryStatus), server_default=InquiryStatus.DRAFT.value, index=True
     )
+    kind: Mapped[InquiryKind] = mapped_column(
+        enum_column(InquiryKind), server_default=InquiryKind.PURCHASE.value
+    )
+    """Purchase request or human handoff. Set at creation; never changes."""
 
     product: Mapped[str | None] = mapped_column(Text)
     quantity: Mapped[int | None] = mapped_column(Integer)

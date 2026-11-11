@@ -648,6 +648,11 @@ export interface components {
             contact?: components["schemas"]["ContactInput"] | null;
             /** Conversation Id */
             conversation_id?: string | null;
+            /**
+             * @description `purchase` is a purchase request. `handoff` asks a person to answer a question the documents could not; put the question in `notes`. The kind cannot be changed later.
+             * @default purchase
+             */
+            kind: components["schemas"]["InquiryKind"];
             notes?: components["schemas"]["Notes"] | null;
             product?: components["schemas"]["Product"] | null;
             quantity?: components["schemas"]["Quantity"] | null;
@@ -658,6 +663,12 @@ export interface components {
          * @enum {string}
          */
         InquiryField: "product" | "quantity" | "timeline" | "contact_name" | "contact_email" | "contact_company" | "contact_phone" | "notes";
+        /**
+         * InquiryKind
+         * @description What the visitor asks for. Set when the inquiry is created and never changed.
+         * @enum {string}
+         */
+        InquiryKind: "purchase" | "handoff";
         /** InquiryList */
         InquiryList: {
             /** Items */
@@ -684,9 +695,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** @description Decides which fields are required: `purchase` needs product, quantity, timeline, contact name and contact email; `handoff` needs contact name, contact email and notes (the visitor's question). */
+            kind: components["schemas"]["InquiryKind"];
             /**
              * Missing Fields
-             * @description Required fields that are still empty. A draft can be confirmed only when this list is empty.
+             * @description Fields required for this inquiry's `kind` that are still empty. A draft can be confirmed only when this list is empty.
              */
             missing_fields?: components["schemas"]["InquiryField"][];
             /** Notes */

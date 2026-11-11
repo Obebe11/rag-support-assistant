@@ -938,6 +938,11 @@
             ],
             "title": "Conversation Id"
           },
+          "kind": {
+            "$ref": "#/components/schemas/InquiryKind",
+            "default": "purchase",
+            "description": "`purchase` is a purchase request. `handoff` asks a person to answer a question the documents could not; put the question in `notes`. The kind cannot be changed later."
+          },
           "notes": {
             "anyOf": [
               {
@@ -994,6 +999,15 @@
           "notes"
         ],
         "title": "InquiryField",
+        "type": "string"
+      },
+      "InquiryKind": {
+        "description": "What the visitor asks for. Set when the inquiry is created and never changed.",
+        "enum": [
+          "purchase",
+          "handoff"
+        ],
+        "title": "InquiryKind",
         "type": "string"
       },
       "InquiryList": {
@@ -1067,8 +1081,12 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "$ref": "#/components/schemas/InquiryKind",
+            "description": "Decides which fields are required: `purchase` needs product, quantity, timeline, contact name and contact email; `handoff` needs contact name, contact email and notes (the visitor's question)."
+          },
           "missing_fields": {
-            "description": "Required fields that are still empty. A draft can be confirmed only when this list is empty.",
+            "description": "Fields required for this inquiry's `kind` that are still empty. A draft can be confirmed only when this list is empty.",
             "items": {
               "$ref": "#/components/schemas/InquiryField"
             },
@@ -1131,6 +1149,7 @@
         "required": [
           "id",
           "status",
+          "kind",
           "contact",
           "created_at",
           "updated_at"

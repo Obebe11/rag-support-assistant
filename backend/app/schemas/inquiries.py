@@ -8,7 +8,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
 from app.core.config import CRMProviderMode
-from app.models.enums import DeliveryAttemptOutcome, DeliveryStatus, InquiryStatus
+from app.models.enums import DeliveryAttemptOutcome, DeliveryStatus, InquiryKind, InquiryStatus
 from app.schemas.common import ApiModel
 
 
@@ -30,7 +30,22 @@ REQUIRED_INQUIRY_FIELDS: tuple[InquiryField, ...] = (
     InquiryField.CONTACT_NAME,
     InquiryField.CONTACT_EMAIL,
 )
-"""Fields a draft needs before the visitor can confirm it."""
+"""Fields a purchase draft needs before the visitor can confirm it."""
+
+REQUIRED_HANDOFF_FIELDS: tuple[InquiryField, ...] = (
+    InquiryField.CONTACT_NAME,
+    InquiryField.CONTACT_EMAIL,
+    InquiryField.NOTES,
+)
+"""Fields a human handoff draft needs: who to reach and the visitor's question (`notes`)."""
+
+
+def required_inquiry_fields(kind: InquiryKind) -> tuple[InquiryField, ...]:
+    """Fields a draft of this kind needs before the visitor can confirm it."""
+    if kind is InquiryKind.HANDOFF:
+        return REQUIRED_HANDOFF_FIELDS
+    return REQUIRED_INQUIRY_FIELDS
+
 
 type Product = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
@@ -65,6 +80,12 @@ class ContactInput(BaseModel):
 class InquiryCreate(BaseModel):
     """Create a draft. Every field is optional; missing ones can be added later."""
 
+    kind: InquiryKind = Field(
+        default=InquiryKind.PURCHASE,
+        description="`purchase` is a purchase request. `handoff` asks a person to answer "
+        "a question the documents could not; put the question in `notes`. The kind "
+        "cannot be changed later.",
+    )
     conversation_id: uuid.UUID | None = None
     product: Product | None = None
     quantity: Quantity | None = None
@@ -118,6 +139,11 @@ class InquiryRead(ApiModel):
     id: uuid.UUID
     conversation_id: uuid.UUID | None = None
     status: InquiryStatus
+    kind: InquiryKind = Field(
+        description="Decides which fields are required: `purchase` needs product, "
+        "quantity, timeline, contact name and contact email; `handoff` needs contact "
+        "name, contact email and notes (the visitor's question)."
+    )
     product: str | None = None
     quantity: int | None = None
     timeline: str | None = None
@@ -125,8 +151,8 @@ class InquiryRead(ApiModel):
     notes: str | None = None
     missing_fields: list[InquiryField] = Field(
         default_factory=list,
-        description="Required fields that are still empty. A draft can be confirmed "
-        "only when this list is empty.",
+        description="Fields required for this inquiry's `kind` that are still empty. "
+        "A draft can be confirmed only when this list is empty.",
     )
     created_at: datetime
     updated_at: datetime

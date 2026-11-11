@@ -37,6 +37,15 @@ class InquiryStatus(StrEnum):
     CONFIRMED = "confirmed"
 
 
+class InquiryKind(StrEnum):
+    """What the visitor asks for. Set when the inquiry is created and never changed."""
+
+    PURCHASE = "purchase"
+    """A purchase request: product, quantity, timeline and contact details."""
+    HANDOFF = "handoff"
+    """A human handoff after a knowledge gap: contact details and the visitor's question."""
+
+
 class DeliveryStatus(StrEnum):
     PENDING = "pending"
     """Queued, or waiting for the next retry."""
