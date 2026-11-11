@@ -93,8 +93,7 @@ function Delivery({ inquiry, onOpenLog }: { inquiry: InquiryRead; onOpenLog: (in
         </p>
       ) : null}
       <Button variant="ghost" size="xs" className="-ml-1.5" onClick={() => onOpenLog(inquiry)}>
-        Delivery log
-        <span className="sr-only"> for {inquiry.contact.name ?? kindLabel(inquiry)}</span>
+        Delivery log <span className="sr-only">for {inquiry.contact.name ?? kindLabel(inquiry)}</span>
       </Button>
     </div>
   );

@@ -91,7 +91,7 @@ export const shippingCitations: Citation[] = [
     version_label: "3.0",
     chunk_id: "8c000000-0000-4000-8000-000000000101",
     page_number: null,
-    section: "Parcel shipping methods and rates",
+    section: "Shipping and delivery > Parcel shipping methods and rates",
     excerpt:
       "Standard Ground shipping is free when the merchandise subtotal, after any discounts, is $500 or more. Free shipping does not apply to Two-Day Air, Next-Day Air, or orders to Alaska and Hawaii.",
     score: 0.83,
@@ -104,7 +104,7 @@ export const shippingCitations: Citation[] = [
     version_label: "3.0",
     chunk_id: "8c000000-0000-4000-8000-000000000102",
     page_number: null,
-    section: "Order processing",
+    section: "Shipping and delivery > Order processing",
     excerpt:
       "In-stock orders placed by 2:00 p.m. Pacific Time on a business day ship the same day. Orders placed after 2:00 p.m. Pacific Time, on a weekend or on a company holiday ship the next business day.",
     score: 0.71,
@@ -133,7 +133,7 @@ export const returnsCitations: Citation[] = [
     version_label: "2.0",
     chunk_id: "8c000000-0000-4000-8000-000000000201",
     page_number: null,
-    section: "Return window",
+    section: "Returns and refunds > Return window",
     excerpt:
       "You can return most items within 30 days of the delivery date. The delivery date is the date shown in the carrier's tracking record.",
     score: 0.86,
@@ -146,7 +146,7 @@ export const returnsCitations: Citation[] = [
     version_label: "2.0",
     chunk_id: "8c000000-0000-4000-8000-000000000202",
     page_number: null,
-    section: "Item condition and refund amount",
+    section: "Returns and refunds > Item condition and refund amount",
     excerpt:
       "Opened, in like-new condition with all accessories, manuals and packaging: item price less a 15% restocking fee.",
     score: 0.74,
@@ -260,8 +260,7 @@ export const clarificationReply = (): MessageRead =>
 
 export const refusalReply = (): MessageRead =>
   assistantMessage({
-    // `refusal` is added to the contract by the chat backend; the UI must not depend on it.
-    answer_type: "refusal" as MessageRead["answer_type"],
+    answer_type: "refusal",
     content:
       "I can only help with questions about Northline products, orders and policies. I cannot follow that request.",
   });

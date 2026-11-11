@@ -131,7 +131,7 @@ describe("Chat: answer types", () => {
     const sources = within(log).getByRole("region", { name: "Sources" });
     expect(within(sources).getAllByRole("listitem")).toHaveLength(shippingCitations.length);
     expect(within(sources).getAllByText("Shipping Policy")).toHaveLength(2);
-    expect(within(sources).getByText("Version 3.0, Parcel shipping methods and rates")).toBeVisible();
+    expect(within(sources).getByText("Version 3.0, Shipping and delivery › Parcel shipping methods and rates")).toBeVisible();
     expect(within(sources).getByText("Version 2.3, Shipping")).toBeVisible();
 
     // Beside the chat the panel opens with the full excerpts.
@@ -266,6 +266,23 @@ describe("Chat: errors", () => {
     await user.click(within(alert).getByRole("button", { name: "Remove message" }));
 
     expect(screen.getByRole("heading", { name: "Ask about shipping, returns, or warranty" })).toBeVisible();
+  });
+
+  it("lets the visitor send again when the answer provider is unavailable", async () => {
+    setMockScenario({ chat: "unavailable" });
+    const { user } = renderApp("/");
+
+    await ask(user, "How long does standard shipping take?");
+
+    const alert = await within(conversation()).findByRole("alert");
+    expect(alert).toHaveTextContent("The assistant is unavailable right now");
+    expect(alert).toHaveTextContent("Your message was not sent.");
+
+    setMockScenario({ chat: "ok" });
+    await user.click(within(alert).getByRole("button", { name: "Send again" }));
+
+    expect(await within(conversation()).findByText(/3 to 5 business days/)).toBeVisible();
+    expect(within(conversation()).getAllByText("How long does standard shipping take?")).toHaveLength(1);
   });
 
   it("shows the message of an error in the common API format", async () => {

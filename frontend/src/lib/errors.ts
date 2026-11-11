@@ -34,6 +34,15 @@ export function describeError(error: unknown): UiError {
         status: error.status,
       };
     }
+    if (error.status === 503) {
+      // A provider (LLM, embeddings) did not answer. Nothing was saved, so the same request can be sent again.
+      return {
+        kind: "server",
+        title: "The assistant is unavailable right now",
+        message: "This is a problem on our side. Try again in a moment.",
+        status: 503,
+      };
+    }
     if (error.status >= 500) {
       return {
         kind: "server",

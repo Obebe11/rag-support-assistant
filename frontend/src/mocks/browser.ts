@@ -7,7 +7,7 @@
  *   ?mock=delivery:fail,health:live,chat:error,latency:600
  * `?mock=reset` returns to the defaults. Values: health demo | live | db-down |
  * crm-failed | offline; delivery success | retry | fail | reject | queued |
- * retrying; chat ok | error | offline. A tagged contact email (`+fail2`, `+fail`,
+ * retrying; chat ok | error | unavailable | offline. A tagged contact email (`+fail2`, `+fail`,
  * `+reject1`, `+reject`) picks the delivery outcome as the real simulated CRM does.
  */
 import { handlers, resetMockApi } from "./handlers";

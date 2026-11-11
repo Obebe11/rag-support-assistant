@@ -73,8 +73,11 @@ export interface MockScenario {
   health: "demo" | "live" | "db-down" | "crm-failed" | "offline";
   /** How a confirmed inquiry is delivered. Each status request advances one step. */
   delivery: keyof typeof DELIVERY_PLANS;
-  /** `error` answers a chat message with 500; `offline` fails it at the network level. */
-  chat: "ok" | "error" | "offline";
+  /**
+   * `error` answers a chat message with 500, `unavailable` with 503 (a provider
+   * failed; nothing is saved); `offline` fails it at the network level.
+   */
+  chat: "ok" | "error" | "unavailable" | "offline";
   /** Artificial latency per request, in milliseconds. */
   latencyMs: number;
 }
@@ -304,6 +307,9 @@ const MEDIA_TYPES: Record<string, string> = {
   pdf: "application/pdf",
 };
 
+/** The default of `MAX_UPLOAD_BYTES` on the server. */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 async function readUpload(request: Request): Promise<
   | { ok: true; version: (versionNumber: number) => DocumentVersionRead; title: string | null }
   | { ok: false; response: Response }
@@ -316,6 +322,12 @@ async function readUpload(request: Request): Promise<
       response: errorResponse(422, "validation_error", "The request is not valid.", [
         { field: "body.file", message: "A file is required." },
       ]),
+    };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return {
+      ok: false,
+      response: errorResponse(413, "payload_too_large", "The file is larger than the 10 MB upload limit."),
     };
   }
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -440,6 +452,9 @@ export const handlers = [
     const failure = await pace();
     if (failure) return failure;
     if (state.scenario.chat === "offline") return HttpResponse.error();
+    if (state.scenario.chat === "unavailable") {
+      return errorResponse(503, "service_unavailable", "The answer provider is unavailable. Try again.");
+    }
     if (state.scenario.chat === "error") {
       return errorResponse(500, "internal_error", "The assistant could not answer. Try again.");
     }

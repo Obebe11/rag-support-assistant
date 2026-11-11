@@ -49,10 +49,10 @@ function RowActions({ document, actions }: { document: DocumentRead; actions: Do
   return (
     <div className="flex flex-wrap items-center gap-1">
       <Button variant="ghost" size="xs" onClick={() => actions.onVersions(document)}>
-        Versions<span className="sr-only"> of {document.title}</span>
+        Versions <span className="sr-only">of {document.title}</span>
       </Button>
       <Button variant="ghost" size="xs" onClick={() => actions.onReplace(document)}>
-        Replace<span className="sr-only"> {document.title}</span>
+        Replace <span className="sr-only">document {document.title}</span>
       </Button>
       <Button
         variant="ghost"
@@ -60,7 +60,7 @@ function RowActions({ document, actions }: { document: DocumentRead; actions: Do
         className="text-destructive-foreground"
         onClick={() => actions.onDelete(document)}
       >
-        Delete<span className="sr-only"> {document.title}</span>
+        Delete <span className="sr-only">document {document.title}</span>
       </Button>
     </div>
   );

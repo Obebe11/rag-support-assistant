@@ -39,6 +39,16 @@ window.ResizeObserver = ResizeObserverStub;
 Element.prototype.scrollIntoView = () => undefined;
 Element.prototype.getAnimations = () => [];
 
+// Uploads: Node's `fetch` cannot send jsdom's `FormData`, and with jsdom's
+// `File` in the global scope it cannot build or parse a multipart body either.
+// Tests therefore use Node's `File`, `Blob`, `FormData` and `Request`; Vitest's
+// own `Request` expects jsdom bodies and would try to convert these.
+const nodeBuffer = (await import("node:buffer" as string)) as { Blob: typeof Blob; File: typeof File };
+window.File = nodeBuffer.File;
+window.Blob = nodeBuffer.Blob;
+window.FormData = (await new Response(new URLSearchParams()).formData()).constructor as typeof FormData;
+window.Request = Object.getPrototypeOf(window.Request) as typeof Request;
+
 beforeEach(() => {
   window.sessionStorage.clear();
   window.localStorage.clear();

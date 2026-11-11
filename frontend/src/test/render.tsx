@@ -6,7 +6,8 @@ import { App } from "../App";
 
 /** Render the whole app at `path` against the mock API, with a user to drive it. */
 export function renderApp(path = "/") {
-  const user = userEvent.setup();
+  // `applyAccept: false` lets a test pick a file the input's `accept` would filter out, as a drag and drop can.
+  const user = userEvent.setup({ applyAccept: false });
   const view = render(
     <MemoryRouter initialEntries={[path]}>
       <App />
