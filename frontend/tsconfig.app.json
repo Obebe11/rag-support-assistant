@@ -7,6 +7,7 @@
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "jsx": "react-jsx",
+    "paths": { "~/*": ["./src/t3code/*"] },
     "types": ["vite/client", "@testing-library/jest-dom/vitest"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
