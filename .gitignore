@@ -1,0 +1,12 @@
+# Local agent instructions and internal planning (never publish)
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+PLAN.md
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key

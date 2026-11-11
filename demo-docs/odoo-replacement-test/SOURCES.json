@@ -1,0 +1,32 @@
+{
+  "publisher": "Odoo S.A. and contributors",
+  "version": "18.0",
+  "repository": "https://github.com/odoo/documentation",
+  "commit": "fbcd35b2423633d45390466cad2bae1f644fb759",
+  "retrieved_at_utc": "2026-11-09T15:30:23.037087+00:00",
+  "license": "CC-BY-SA-4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "modifications": "None: source article files are copied byte-for-byte. Images and linked articles are not included.",
+  "documents": [
+    {
+      "file": "convert.rst",
+      "title": "Convert leads into opportunities",
+      "source_path": "content/applications/sales/crm/acquire_leads/convert.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/fbcd35b2423633d45390466cad2bae1f644fb759/content/applications/sales/crm/acquire_leads/convert.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/fbcd35b2423633d45390466cad2bae1f644fb759/content/applications/sales/crm/acquire_leads/convert.rst",
+      "web_url": "https://www.odoo.com/documentation/18.0/applications/sales/crm/acquire_leads/convert.html",
+      "sha256": "f587dc4c6447446c9d7a5e7f44471d3716fb376f727d10965914443cfecae8b6",
+      "bytes": 4367
+    },
+    {
+      "file": "down_payment.rst",
+      "title": "Down payments",
+      "source_path": "content/applications/sales/sales/invoicing/down_payment.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/fbcd35b2423633d45390466cad2bae1f644fb759/content/applications/sales/sales/invoicing/down_payment.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/fbcd35b2423633d45390466cad2bae1f644fb759/content/applications/sales/sales/invoicing/down_payment.rst",
+      "web_url": "https://www.odoo.com/documentation/18.0/applications/sales/sales/invoicing/down_payment.html",
+      "sha256": "0a8dfdec02dbec196198be60a750a90735bca8af6ff783343040df3de5f7a709",
+      "bytes": 12504
+    }
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "publisher": "Odoo S.A. and contributors",
+  "version": "19.0",
+  "repository": "https://github.com/odoo/documentation",
+  "commit": "67e8ded4a03d7c53be4e2c4d53471678e9e9352e",
+  "retrieved_at_utc": "2026-11-08T20:13:56.956971+00:00",
+  "license": "CC-BY-SA-4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "modifications": "None: source article files are copied byte-for-byte. Images and linked articles are not included.",
+  "documents": [
+    {
+      "file": "invoicing_policy.rst",
+      "title": "Invoicing policies",
+      "source_path": "content/applications/sales/sales/invoicing/invoicing_policy.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/invoicing/invoicing_policy.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/invoicing/invoicing_policy.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/invoicing/invoicing_policy.html",
+      "sha256": "7e6b9e0af7748b8310d1d5558a9eabe066dd321564426ac55d60ea8220816ee3",
+      "bytes": 7714
+    },
+    {
+      "file": "down_payment.rst",
+      "title": "Down payments",
+      "source_path": "content/applications/sales/sales/invoicing/down_payment.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/invoicing/down_payment.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/invoicing/down_payment.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/invoicing/down_payment.html",
+      "sha256": "221838da98cb31fa76393ee94a2fd73ccf281052a83008988a748559a11a2571",
+      "bytes": 12339
+    },
+    {
+      "file": "returns.rst",
+      "title": "Returns and refunds",
+      "source_path": "content/applications/sales/sales/products_prices/returns.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/products_prices/returns.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/products_prices/returns.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/products_prices/returns.html",
+      "sha256": "67832723af18cb48b5b1eba73f90319e37c02ab5ffeb4423a851cabfc233388b",
+      "bytes": 5098
+    },
+    {
+      "file": "different_addresses.rst",
+      "title": "Deliveries and invoices to different addresses",
+      "source_path": "content/applications/sales/sales/sales_quotations/different_addresses.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/different_addresses.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/different_addresses.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/sales_quotations/different_addresses.html",
+      "sha256": "36c1d48dc82f9c68c81e9c1351c9587834b3c6e5704e3d799282bb54ffe177b8",
+      "bytes": 2908
+    },
+    {
+      "file": "create_quotations.rst",
+      "title": "Create quotations",
+      "source_path": "content/applications/sales/sales/sales_quotations/create_quotations.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/create_quotations.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/create_quotations.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/sales_quotations/create_quotations.html",
+      "sha256": "99956278f3cc946c6d14eb6e326e81fd458d9055ccd31290a4d4c5136df1112f",
+      "bytes": 16633
+    },
+    {
+      "file": "email_manual.rst",
+      "title": "Create leads (from email or manually)",
+      "source_path": "content/applications/sales/crm/acquire_leads/email_manual.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/crm/acquire_leads/email_manual.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/crm/acquire_leads/email_manual.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/crm/acquire_leads/email_manual.html",
+      "sha256": "8ce48ab6879b41854697b93fb338cc18768466a33d026ce225fd278117c8b474",
+      "bytes": 5419
+    },
+    {
+      "file": "convert.rst",
+      "title": "Convert leads into opportunities",
+      "source_path": "content/applications/sales/crm/acquire_leads/convert.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/crm/acquire_leads/convert.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/crm/acquire_leads/convert.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/crm/acquire_leads/convert.html",
+      "sha256": "9335c0a29f49124099edd76d38de7a2d1bcb9f4edf0662b576b6ac48ad68d60f",
+      "bytes": 4274
+    },
+    {
+      "file": "receiving_tickets.rst",
+      "title": "Receiving tickets",
+      "source_path": "content/applications/services/helpdesk/overview/receiving_tickets.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/overview/receiving_tickets.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/overview/receiving_tickets.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/services/helpdesk/overview/receiving_tickets.html",
+      "sha256": "a0833bf180c0945838a6511edddf107e82bacdfe037e7506ab45237f754542f8",
+      "bytes": 16334
+    },
+    {
+      "file": "sla.rst",
+      "title": "Service level agreements (SLA)",
+      "source_path": "content/applications/services/helpdesk/overview/sla.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/overview/sla.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/overview/sla.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/services/helpdesk/overview/sla.html",
+      "sha256": "9411678e5a93e4fae37b5230ef88b37b95f5adfbdfc0eb14df2abae7e58864f4",
+      "bytes": 9744
+    },
+    {
+      "file": "after_sales.rst",
+      "title": "After-Sales services",
+      "source_path": "content/applications/services/helpdesk/advanced/after_sales.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/advanced/after_sales.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/advanced/after_sales.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/services/helpdesk/advanced/after_sales.html",
+      "sha256": "f8b80b0ca8be590381b9eb43389dfff1b3245edffd594e127f300734e1d3fb77",
+      "bytes": 14226
+    },
+    {
+      "file": "lead_scoring.rst",
+      "title": "Assign leads with predictive lead scoring",
+      "source_path": "content/applications/sales/crm/track_leads/lead_scoring.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/crm/track_leads/lead_scoring.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/crm/track_leads/lead_scoring.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/crm/track_leads/lead_scoring.html",
+      "sha256": "28868710e9ba5b440292e59ecd51b7f1a4b90939b6eb141586ed54452d44c1cf",
+      "bytes": 9755
+    },
+    {
+      "file": "ratings.rst",
+      "title": "Customer ratings",
+      "source_path": "content/applications/services/helpdesk/overview/ratings.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/overview/ratings.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/services/helpdesk/overview/ratings.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/services/helpdesk/overview/ratings.html",
+      "sha256": "9677f9c202abee8d4bb35d03c655148412c3ae8dc7a1d7c856ae5376073e9c7b",
+      "bytes": 3030
+    },
+    {
+      "file": "quote_template.rst",
+      "title": "Quotation templates",
+      "source_path": "content/applications/sales/sales/sales_quotations/quote_template.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/quote_template.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/quote_template.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/sales_quotations/quote_template.html",
+      "sha256": "e24d9dfa5866efa30c2b8959ed58ef6c4de03f692e82f62ae7d306748c451eb7",
+      "bytes": 10807
+    },
+    {
+      "file": "get_signature_to_validate.rst",
+      "title": "Online signatures for order confirmations",
+      "source_path": "content/applications/sales/sales/sales_quotations/get_signature_to_validate.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/get_signature_to_validate.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/get_signature_to_validate.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/sales_quotations/get_signature_to_validate.html",
+      "sha256": "a6e9817d565ea6ab08e85f338f5fc7148b0e87a14d772db854ab809732030241",
+      "bytes": 4202
+    },
+    {
+      "file": "get_paid_to_validate.rst",
+      "title": "Online payment order confirmation",
+      "source_path": "content/applications/sales/sales/sales_quotations/get_paid_to_validate.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/get_paid_to_validate.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/sales_quotations/get_paid_to_validate.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/sales_quotations/get_paid_to_validate.html",
+      "sha256": "f3e0dc367191c66b43183581b6e1fd57ebe27b5093147a5e279ee8a02a090c92",
+      "bytes": 3926
+    },
+    {
+      "file": "pricing.rst",
+      "title": "Pricelists",
+      "source_path": "content/applications/sales/sales/products_prices/prices/pricing.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/products_prices/prices/pricing.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/products_prices/prices/pricing.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/products_prices/prices/pricing.html",
+      "sha256": "1ce54f56748339d6e5c47350128524590c3b606d22a62856bad2b5fa6eecf078",
+      "bytes": 13179
+    },
+    {
+      "file": "discounts.rst",
+      "title": "Discounts",
+      "source_path": "content/applications/sales/sales/products_prices/prices/discounts.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/products_prices/prices/discounts.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/sales/products_prices/prices/discounts.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/sales/products_prices/prices/discounts.html",
+      "sha256": "c5c74d3bc507f2d9233f314eb1039b3ca0c6a105710a62f37c5c18fcaa8a6384",
+      "bytes": 4101
+    },
+    {
+      "file": "setup_configuration.rst",
+      "title": "Delivery methods",
+      "source_path": "content/applications/inventory_and_mrp/inventory/shipping_receiving/setup_configuration.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/inventory_and_mrp/inventory/shipping_receiving/setup_configuration.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/inventory_and_mrp/inventory/shipping_receiving/setup_configuration.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/shipping_receiving/setup_configuration.html",
+      "sha256": "1e783e8bcba206989e6a792b91682821b0da6f5ad7974e802694db028713094f",
+      "bytes": 5059
+    },
+    {
+      "file": "checkout.rst",
+      "title": "Ordering and checkout",
+      "source_path": "content/applications/websites/ecommerce/checkout.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/websites/ecommerce/checkout.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/websites/ecommerce/checkout.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/websites/ecommerce/checkout.html",
+      "sha256": "feda2b90cee217c8ca4f16ef1525f28004a6b1fb53ab5ee07fca32adcdda004e",
+      "bytes": 13887
+    },
+    {
+      "file": "renewals.rst",
+      "title": "Renew subscriptions",
+      "source_path": "content/applications/sales/subscriptions/renewals.rst",
+      "raw_url": "https://raw.githubusercontent.com/odoo/documentation/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/subscriptions/renewals.rst",
+      "source_url": "https://github.com/odoo/documentation/blob/67e8ded4a03d7c53be4e2c4d53471678e9e9352e/content/applications/sales/subscriptions/renewals.rst",
+      "web_url": "https://www.odoo.com/documentation/19.0/applications/sales/subscriptions/renewals.html",
+      "sha256": "d9f0a9d83d4005c3f9d979f9dc42dc62b226aa9872f192c4a4b4716318a32cfe",
+      "bytes": 3082
+    }
+  ],
+  "additional_documents_retrieved_at_utc": "2026-11-09T15:30:23.037087+00:00"
+}
