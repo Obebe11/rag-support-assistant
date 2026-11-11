@@ -6,6 +6,7 @@ import signal
 from app.core.config import get_settings
 from app.core.db import create_engine, create_session_factory
 from app.core.logging import configure_logging
+from app.providers.crm.access import CRMAccessMonitor
 from app.providers.factory import build_providers
 from app.worker.handlers import load_handlers
 from app.worker.registry import JobRegistry
@@ -17,6 +18,10 @@ async def main() -> None:
     settings = get_settings()
     engine = create_engine(settings.database_url)
     providers = build_providers(settings)
+    if settings.crm_access_check_enabled:
+        # Logs the result. A failed check does not stop the worker: deliveries
+        # fail, are recorded, and can be retried once access is fixed.
+        await CRMAccessMonitor(providers.crm).refresh()
     registry = JobRegistry()
     load_handlers(registry)
     worker = Worker(

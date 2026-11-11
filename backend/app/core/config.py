@@ -64,6 +64,20 @@ class Settings(BaseSettings):
 
     crm_provider: CRMProviderMode = CRMProviderMode.SIMULATED
     hubspot_access_token: SecretStr | None = None
+    hubspot_base_url: str = "https://api.hubapi.com"
+    hubspot_timeout_seconds: float = Field(default=10.0, gt=0)
+    crm_access_check_enabled: bool = Field(
+        default=True,
+        description="Check CRM credentials and required fields at startup and report "
+        "the result in /api/health.",
+    )
+    crm_access_check_interval_seconds: float = Field(default=300.0, gt=0)
+    delivery_max_attempts: int = Field(
+        default=5,
+        ge=1,
+        description="Automatic delivery attempts per inquiry before the delivery fails. "
+        "A manual retry starts a new set.",
+    )
 
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
 
