@@ -27,10 +27,12 @@ import { SourcesList } from "../features/chat/SourcesList";
 import { SourcesPanel } from "../features/chat/SourcesPanel";
 import type { Chat } from "../features/chat/useChat";
 import { InquiryThread } from "../features/inquiry/InquiryThread";
+import { restoredHandoffs } from "../features/inquiry/restoredHandoffs";
 
+// Questions the demo knowledge base answers in every mode, including the keyless local one.
 const EXAMPLE_QUESTIONS = [
-  "How long does standard shipping take?",
-  "Can I return an opened printer?",
+  "How much does shipping cost?",
+  "How long do I have to return an item?",
   "What does the warranty cover?",
 ];
 
@@ -59,8 +61,13 @@ const CLOSED_PANEL: PanelState = {
   userClosed: false,
 };
 
+/**
+ * A grounded answer has sources. So does an inquiry offer whose message also
+ * asked a question: the reply answers it first and then offers the inquiry.
+ */
 function hasSources(message: MessageRead): boolean {
-  return message.answer_type === "grounded" && (message.citations?.length ?? 0) > 0;
+  const answered = message.answer_type === "grounded" || message.answer_type === "inquiry_offer";
+  return answered && (message.citations?.length ?? 0) > 0;
 }
 
 /**
@@ -144,6 +151,26 @@ function ChatView({ chat }: { chat: Chat }) {
     if (viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [messageCount, pendingStatus, dockHeight]);
 
+  // Stay at the bottom while the newest card grows: a draft becomes a review, a delivery
+  // status changes. A visitor who scrolled up to read is left where they are.
+  useEffect(() => {
+    const viewport = scrollRef.current;
+    if (!viewport || typeof MutationObserver === "undefined") return;
+    let pinned = true;
+    const onScroll = () => {
+      pinned = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 48;
+    };
+    const observer = new MutationObserver(() => {
+      if (pinned) viewport.scrollTop = viewport.scrollHeight;
+    });
+    viewport.addEventListener("scroll", onScroll, { passive: true });
+    observer.observe(viewport, { childList: true, subtree: true, characterData: true });
+    return () => {
+      viewport.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, []);
+
   // A panel opened by the visitor takes focus; one opened by a new reply does not.
   useEffect(() => {
     if (!focusPanelRef.current || panelBody === null || !panel.open) return;
@@ -161,6 +188,12 @@ function ChatView({ chat }: { chat: Chat }) {
     }
     return byInquiry;
   }, [messages]);
+
+  /** Handoff requests made before a reload, by the knowledge-gap message they belong to. */
+  const handoffs = useMemo(
+    () => restoredHandoffs(messages, chat.restoredInquiries),
+    [messages, chat.restoredInquiries],
+  );
 
   const sourcesMessage =
     messages.find((message) => message.id === panel.sourcesMessageId) ??
@@ -286,11 +319,11 @@ function ChatView({ chat }: { chat: Chat }) {
                     {message.answer_type === "knowledge_gap" ? (
                       <InquiryThread
                         kind="handoff"
-                        initialInquiry={null}
+                        initialInquiry={handoffs.get(message.id) ?? null}
                         conversationId={chat.conversationId}
                         defaults={{ notes: question ?? "" }}
                         active={panel.open && activeTab === "inquiry" && panel.flow?.key === message.id}
-                        started={startedFlows.includes(message.id)}
+                        started={startedFlows.includes(message.id) || handoffs.has(message.id)}
                         panelBody={panelBody}
                         onOpen={() => openFlow(message.id, "handoff")}
                       />

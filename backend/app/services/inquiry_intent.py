@@ -1,10 +1,10 @@
-"""The seam between chat (T3) and inquiries (T4).
+"""The seam between the chat and the inquiries.
 
 The chat service calls `InquiryIntentDetector.assess` for every visitor message
 and never imports inquiry internals. The inquiry module provides the real
 detector through `app.services.inquiries.intent.build_inquiry_intent_detector`.
 
-Shared file: the contract below changes only additively.
+The contract below changes only additively.
 """
 
 import uuid
@@ -36,6 +36,12 @@ class InquiryIntent:
     """Required fields the assistant still has to ask for."""
     inquiry_id: uuid.UUID | None = None
     """The draft the inquiry module created or updated, if it keeps one."""
+    question: str | None = None
+    """The part of the new message that asks a question next to the request, if any.
+
+    "We want to order 12 shredders. Would shipping be free?" gives "Would shipping
+    be free?". The chat answers it from the knowledge base before it offers the inquiry.
+    """
 
 
 NO_INQUIRY_INTENT = InquiryIntent(detected=False)

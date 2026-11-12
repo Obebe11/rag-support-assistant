@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import type { InquiryRead } from "../../api/client";
 import { describeDelivery, describeFailureReason } from "../inquiry/deliveryStatus";
 import type { DeliveryPhase } from "../inquiry/deliveryStatus";
+import { EmailText } from "../inquiry/EmailText";
 import { formatDateTime } from "./format";
 import type { StatusVariant } from "./format";
 import type { AdminInquiries } from "./useAdminInquiries";
@@ -32,7 +33,11 @@ function Contact({ inquiry }: { inquiry: InquiryRead }) {
   return (
     <div className="min-w-0">
       <div className="text-foreground [overflow-wrap:anywhere]">{name ?? "No name"}</div>
-      {email ? <div className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{email}</div> : null}
+      {email ? (
+        <div className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+          <EmailText email={email} />
+        </div>
+      ) : null}
     </div>
   );
 }

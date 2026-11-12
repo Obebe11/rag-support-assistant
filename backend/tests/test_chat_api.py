@@ -24,6 +24,7 @@ from app.services.chat.guard import (
     strip_embedded_instructions,
 )
 from app.services.inquiry_intent import ConversationTurn, InquiryIntent
+from tests.inquiry_support import handoff_body
 from tests.kb import EVAL_FIXTURES, NORTHLINE_DOCUMENTS, ask, ingest, start_conversation
 
 MISSING_ID = "00000000-0000-4000-8000-000000000001"
@@ -67,10 +68,46 @@ async def test_a_conversation_starts_empty_and_can_be_read(
     assert created.status_code == 201
     conversation = created.json()
     assert conversation["messages"] == []
+    assert conversation["inquiries"] == []
     assert uuid.UUID(conversation["id"])
     read = await client.get(f"/api/conversations/{conversation['id']}")
     assert read.status_code == 200
     assert read.json() == conversation
+
+
+async def test_a_conversation_lists_its_inquiries_in_their_current_state(
+    client: httpx.AsyncClient, knowledge_base: dict[str, dict[str, Any]]
+) -> None:
+    """A handoff request is created by the client, so only this list restores it."""
+    conversation_id = await start_conversation(client)
+    other_conversation_id = await start_conversation(client)
+    gap = await ask(client, "Do you offer on-site installation in Brazil?", conversation_id)
+    offered = await ask(client, "I would like to buy 12 LP-420 label printers.", conversation_id)
+    handoff = await client.post(
+        "/api/inquiries", json=handoff_body(conversation_id=conversation_id)
+    )
+    await client.post("/api/inquiries", json=handoff_body(conversation_id=other_conversation_id))
+    await client.post("/api/inquiries", json=handoff_body())
+    handoff_id = handoff.json()["id"]
+
+    draft = (await client.get(f"/api/conversations/{conversation_id}")).json()
+    confirmed = await client.post(f"/api/inquiries/{handoff_id}/confirm")
+    after = (await client.get(f"/api/conversations/{conversation_id}")).json()
+
+    assert gap["answer_type"] == "knowledge_gap"
+    # Oldest first: the purchase draft the assistant opened, then the handoff request.
+    assert [
+        (inquiry["id"], inquiry["kind"], inquiry["status"]) for inquiry in draft["inquiries"]
+    ] == [
+        (offered["inquiry"]["id"], "purchase", "draft"),
+        (handoff_id, "handoff", "draft"),
+    ]
+    assert draft["inquiries"][1] == handoff.json()
+    assert confirmed.status_code == 200
+    restored = after["inquiries"][1]
+    assert (restored["status"], restored["delivery"]["status"]) == ("confirmed", "pending")
+    assert restored["notes"] == "Do you offer on-site assembly in Alaska?"
+    assert restored == confirmed.json()
 
 
 async def test_unknown_conversations_and_invalid_messages_are_rejected(
@@ -443,9 +480,16 @@ async def test_a_hidden_comment_in_a_document_cannot_turn_a_gap_into_an_answer(
 class _FakeDetector:
     """Stands in for the inquiry module: saves a draft through the chat's session."""
 
-    def __init__(self, *, missing: tuple[InquiryField, ...], trigger: str = "quote") -> None:
+    def __init__(
+        self,
+        *,
+        missing: tuple[InquiryField, ...],
+        trigger: str = "quote",
+        question: str | None = None,
+    ) -> None:
         self.missing = missing
         self.trigger = trigger
+        self.question = question
         self.calls: list[list[ConversationTurn]] = []
 
     async def assess(
@@ -468,6 +512,7 @@ class _FakeDetector:
             fields={InquiryField.PRODUCT: "LP-420", InquiryField.QUANTITY: 12},
             missing_fields=self.missing,
             inquiry_id=inquiry.id,
+            question=self.question,
         )
 
 
@@ -496,6 +541,7 @@ async def test_purchase_intent_from_the_inquiry_seam_becomes_an_inquiry_offer(
     assert inquiry["missing_fields"] == ["timeline", "contact_name", "contact_email"]
     assert inquiry["delivery"] is None
     assert offered["usage"]["retrieved"] == []
+    assert offered["usage"]["question_answer_type"] is None
 
     # The detector saw the whole conversation, with the new message last.
     assert [(turn.role, turn.content) for turn in detector.calls[-1]] == [
@@ -517,6 +563,85 @@ async def test_a_complete_draft_is_offered_for_confirmation(
 
     assert offered["answer_type"] == "inquiry_offer"
     assert "review the details and confirm" in offered["content"]
+
+
+OFFER_TEXT = (
+    "I can prepare a purchase inquiry for the sales team. To complete it, please tell me "
+    "when you need it, your name and your email address."
+)
+
+
+async def test_a_question_next_to_a_purchase_request_is_answered_before_the_offer(
+    app: FastAPI, client: httpx.AsyncClient, knowledge_base: dict[str, dict[str, Any]]
+) -> None:
+    app.state.inquiry_intent_detector = _FakeDetector(
+        missing=(InquiryField.TIMELINE, InquiryField.CONTACT_NAME, InquiryField.CONTACT_EMAIL),
+        question="What is the restocking fee for an opened item?",
+    )
+    conversation_id = await start_conversation(client)
+
+    reply = await ask(
+        client,
+        "Please send me a quote for 12 LP-420 printers. "
+        "What is the restocking fee for an opened item?",
+        conversation_id,
+    )
+
+    # One reply: the answer with its sources first, then the offer with the draft.
+    assert reply["answer_type"] == "inquiry_offer"
+    answer, _, offer = reply["content"].rpartition("\n\n")
+    assert offer == OFFER_TEXT
+    assert "15% restocking fee" in answer
+    assert LOCAL_MODE_NOTICE in answer
+    assert [citation["document_title"] for citation in reply["citations"]] == ["Returns Policy"]
+    assert "15% restocking fee" in reply["citations"][0]["excerpt"]
+    assert (reply["inquiry"]["status"], reply["inquiry"]["quantity"]) == ("draft", 12)
+    usage = reply["usage"]
+    assert usage["question_answer_type"] == "grounded"
+    assert usage["retrieved"][0]["document_title"] == "Returns Policy"
+    assert usage["retrieval_time_ms"] is not None
+    # Reading the conversation again returns the same combined reply.
+    conversation = (await client.get(f"/api/conversations/{conversation_id}")).json()
+    assert conversation["messages"][-1] == reply
+
+
+async def test_a_question_the_documents_do_not_answer_is_acknowledged_before_the_offer(
+    app: FastAPI, client: httpx.AsyncClient, knowledge_base: dict[str, dict[str, Any]]
+) -> None:
+    app.state.inquiry_intent_detector = _FakeDetector(
+        missing=(InquiryField.TIMELINE, InquiryField.CONTACT_NAME, InquiryField.CONTACT_EMAIL),
+        question="Do you offer on-site installation in Brazil?",
+    )
+
+    reply = await ask(
+        client,
+        "Please send me a quote for 12 LP-420 printers. "
+        "Do you offer on-site installation in Brazil?",
+    )
+
+    assert reply["answer_type"] == "inquiry_offer"
+    assert reply["content"] == (
+        "I could not find an answer to your question in the company's documents, and I do "
+        "not want to guess. You can add the question to the notes of your inquiry, so the "
+        f"sales team sees it.\n\n{OFFER_TEXT}"
+    )
+    assert reply["citations"] == []
+    assert reply["inquiry"]["status"] == "draft"
+    assert reply["usage"]["question_answer_type"] == "knowledge_gap"
+
+
+async def test_the_application_answers_a_request_that_runs_into_a_question(
+    client: httpx.AsyncClient, knowledge_base: dict[str, dict[str, Any]]
+) -> None:
+    """The chat and the inquiry module together, as the application wires them."""
+    reply = await ask(client, "I want 12 LP-420 printers, what is the warranty?")
+
+    assert reply["answer_type"] == "inquiry_offer"
+    assert reply["usage"]["question_answer_type"] == "grounded"
+    assert "2-year warranty" in reply["content"]
+    assert reply["content"].endswith(OFFER_TEXT)
+    assert reply["citations"][0]["document_title"] == "Northline LP-420 Thermal Label Printer"
+    assert (reply["inquiry"]["product"], reply["inquiry"]["quantity"]) == ("LP-420 printers", 12)
 
 
 async def test_the_inquiry_module_is_not_asked_about_an_override_attempt(

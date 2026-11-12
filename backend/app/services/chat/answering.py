@@ -24,6 +24,12 @@ KNOWLEDGE_GAP_TEXT = (
 HANDOFF_OFFER_TEXT = (
     "I can pass your question to a member of the team. Would you like a person to follow up?"
 )
+QUESTION_GAP_TEXT = (
+    "I could not find an answer to your question in the company's documents, and I do not "
+    "want to guess. You can add the question to the notes of your inquiry, so the sales "
+    "team sees it."
+)
+"""A knowledge gap in a reply that also offers a purchase inquiry."""
 CLARIFICATION_TEXT = (
     "Could you tell me a bit more about what you need? For example, name the product or "
     "the policy your question is about."

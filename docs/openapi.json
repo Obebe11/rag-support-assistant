@@ -382,6 +382,14 @@
             "title": "Id",
             "type": "string"
           },
+          "inquiries": {
+            "description": "Every inquiry of the conversation in its current state, oldest first: purchase inquiries and human handoff requests, drafts and confirmed ones. A handoff request is not attached to a message, so a client restores it from this list.",
+            "items": {
+              "$ref": "#/components/schemas/InquiryRead"
+            },
+            "title": "Inquiries",
+            "type": "array"
+          },
           "messages": {
             "items": {
               "$ref": "#/components/schemas/MessageRead"
@@ -1384,6 +1392,7 @@
             "description": "Set on assistant messages only."
           },
           "citations": {
+            "description": "Sources of a `grounded` answer. An `inquiry_offer` has them when the visitor's message also asked a question that the documents answer.",
             "items": {
               "$ref": "#/components/schemas/Citation"
             },
@@ -1543,6 +1552,17 @@
             ],
             "description": "LLM completion tokens, when the API reports them.",
             "title": "Output Tokens"
+          },
+          "question_answer_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnswerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set on an `inquiry_offer` reply to a message that also asked a question: how the question was answered, `grounded` or `knowledge_gap`. The citations of the message support that answer."
           },
           "response_time_ms": {
             "description": "Time to produce the reply, in milliseconds.",

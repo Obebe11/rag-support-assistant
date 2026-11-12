@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, ApiError, unwrap } from "../../api/client";
-import type { MessageRead } from "../../api/client";
+import type { InquiryRead, MessageRead } from "../../api/client";
 import { describeError } from "../../lib/errors";
 import type { UiError } from "../../lib/errors";
 
@@ -22,6 +22,12 @@ export type ChatPhase =
 export interface ChatState {
   phase: ChatPhase;
   messages: MessageRead[];
+  /**
+   * The inquiries of the conversation as the server returned them after a
+   * reload. A handoff request is not attached to a message, so it is restored
+   * from this list; see `restoredHandoffs`.
+   */
+  restoredInquiries: InquiryRead[];
   /** At most one message is in flight; a failed one waits for retry or removal. */
   pending: PendingMessage | null;
   /**
@@ -76,6 +82,7 @@ export function useChat(): Chat {
   const [state, setState] = useState<ChatState>(() => ({
     phase: storedConversation.read() === null ? "ready" : "restoring",
     messages: [],
+    restoredInquiries: [],
     pending: null,
     latestReplyId: null,
     generation: 0,
@@ -93,7 +100,12 @@ export function useChat(): Chat {
     unwrap(api.GET("/api/conversations/{conversation_id}", { params: { path: { conversation_id: id } } })).then(
       (conversation) => {
         if (!active) return;
-        setState((current) => ({ ...current, phase: "ready", messages: conversation.messages ?? [] }));
+        setState((current) => ({
+          ...current,
+          phase: "ready",
+          messages: conversation.messages ?? [],
+          restoredInquiries: conversation.inquiries ?? [],
+        }));
       },
       (error: unknown) => {
         if (!active) return;
@@ -102,7 +114,14 @@ export function useChat(): Chat {
           storedConversation.write(null);
           conversationIdRef.current = null;
           setConversationId(null);
-          setState((current) => ({ ...current, phase: "ready", messages: [], pending: null, latestReplyId: null }));
+          setState((current) => ({
+            ...current,
+            phase: "ready",
+            messages: [],
+            restoredInquiries: [],
+            pending: null,
+            latestReplyId: null,
+          }));
         } else {
           setState((current) => ({ ...current, phase: "restore_failed" }));
         }
@@ -192,6 +211,7 @@ export function useChat(): Chat {
     setState((current) => ({
       phase: "ready",
       messages: [],
+      restoredInquiries: [],
       pending: null,
       latestReplyId: null,
       generation: current.generation + 1,

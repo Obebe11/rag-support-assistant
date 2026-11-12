@@ -88,6 +88,12 @@ class MessageUsage(BaseModel):
     note: str | None = Field(
         default=None, description="Why the reply differs from what the LLM proposed, if it does."
     )
+    question_answer_type: AnswerType | None = Field(
+        default=None,
+        description="Set on an `inquiry_offer` reply to a message that also asked a question: "
+        "how the question was answered, `grounded` or `knowledge_gap`. The citations of the "
+        "message support that answer.",
+    )
 
 
 class MessageCreate(BaseModel):
@@ -102,7 +108,11 @@ class MessageRead(ApiModel):
     answer_type: AnswerType | None = Field(
         default=None, description="Set on assistant messages only."
     )
-    citations: list[Citation] = Field(default_factory=list)
+    citations: list[Citation] = Field(
+        default_factory=list,
+        description="Sources of a `grounded` answer. An `inquiry_offer` has them when the "
+        "visitor's message also asked a question that the documents answer.",
+    )
     inquiry: InquiryRead | None = Field(
         default=None,
         description="The inquiry offered with this assistant message, in its current "
@@ -128,3 +138,9 @@ class ConversationRead(ApiModel):
     created_at: datetime
     updated_at: datetime
     messages: list[MessageRead] = Field(default_factory=list)
+    inquiries: list[InquiryRead] = Field(
+        default_factory=list,
+        description="Every inquiry of the conversation in its current state, oldest first: "
+        "purchase inquiries and human handoff requests, drafts and confirmed ones. A handoff "
+        "request is not attached to a message, so a client restores it from this list.",
+    )

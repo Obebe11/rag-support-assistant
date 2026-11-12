@@ -1,4 +1,4 @@
-"""Inquiry delivery jobs. Owner: T4.
+"""Inquiry delivery jobs.
 
 The handler for `app.worker.job_types.DELIVER_INQUIRY` lives in
 `app.services.inquiries.delivery`.

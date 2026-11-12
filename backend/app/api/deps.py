@@ -1,6 +1,6 @@
 """FastAPI dependencies shared by every route.
 
-Shared file: change it only additively.
+Change it only additively.
 """
 
 import secrets

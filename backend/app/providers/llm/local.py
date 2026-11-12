@@ -1,7 +1,5 @@
 """Local LLM mode: offline, deterministic, clearly labeled as not a real LLM.
 
-Owner: T3.
-
 This mode generates no text. Services check `live` first: the chat service
 builds an extractive reply from retrieved passages instead of prompting (see
 `app.services.chat.extractive`). A direct call to `complete` is a programming

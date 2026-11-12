@@ -96,7 +96,10 @@ function InquiryCard(props: { flow: InquiryFlow; started: boolean; onOpen: () =>
  */
 export function InquiryThread(props: {
   kind: InquiryKind;
-  /** The draft offered by the assistant; `null` for a human handoff, which is created on review. */
+  /**
+   * The draft offered by the assistant, or a handoff request restored after a
+   * reload; `null` for a new human handoff, which is created on review.
+   */
   initialInquiry: InquiryRead | null;
   conversationId: string | null;
   defaults?: Partial<InquiryValues>;

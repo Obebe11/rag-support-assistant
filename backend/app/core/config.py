@@ -29,7 +29,7 @@ class CRMProviderMode(StrEnum):
 class Settings(BaseSettings):
     """Runtime configuration.
 
-    Shared file: T3, T4 and T5 may only add fields here, never rename or remove them.
+    Every field is listed in `.env.example`. Add fields; do not rename or remove them.
     """
 
     model_config = SettingsConfigDict(

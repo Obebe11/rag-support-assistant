@@ -9,7 +9,8 @@ import { renderApp } from "../test/render";
 import { server, useMockApi } from "../test/server";
 
 async function signIn(user: UserEvent, token: string = MOCK_ADMIN_TOKEN) {
-  await user.type(screen.getByLabelText("Admin token"), token);
+  // The admin page is a separately loaded file, so the form appears a moment after the route.
+  await user.type(await screen.findByLabelText("Admin token"), token);
   await user.click(screen.getByRole("button", { name: "Sign in" }));
 }
 
@@ -32,7 +33,7 @@ describe("Admin sign-in", () => {
   it("asks for a token before sending anything", async () => {
     const { user } = renderApp("/admin");
 
-    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("A token is required");
     expect(screen.queryByRole("table")).not.toBeInTheDocument();

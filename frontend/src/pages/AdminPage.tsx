@@ -169,7 +169,7 @@ function AdminWorkspace({ session, client }: { session: AdminSession; client: Ad
             </div>
             {/* On narrow windows the summary takes its own row under the tabs. */}
             <p
-              className="order-last m-0 w-full min-w-0 text-xs text-muted-foreground tabular-nums sm:order-none sm:w-auto sm:flex-1 sm:truncate"
+              className="order-last m-0 w-full min-w-0 text-xs text-muted-foreground tabular-nums sm:order-none sm:w-auto sm:flex-1"
               role="status"
             >
               {loaded ? summary : ""}
@@ -245,7 +245,7 @@ function AdminWorkspace({ session, client }: { session: AdminSession; client: Ad
           onClose={() => setDialog(null)}
           onSubmit={async (input) => {
             const failure = await documents.replace(dialog.document.id, input);
-            if (failure === null) setNotice("New version uploaded. It becomes active after indexing.");
+            if (failure === null) setNotice("New version uploaded. The assistant cites it after indexing.");
             return failure;
           }}
         />

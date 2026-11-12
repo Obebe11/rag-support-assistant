@@ -45,8 +45,8 @@ describe("Chat: empty state and history", () => {
   it("offers example questions about shipping, returns and warranty", async () => {
     const { user } = renderApp("/");
 
-    expect(screen.getByRole("button", { name: "How long does standard shipping take?" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Can I return an opened printer?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "How much does shipping cost?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "How long do I have to return an item?" })).toBeVisible();
     expect(screen.getByRole("button", { name: "What does the warranty cover?" })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "What does the warranty cover?" }));
@@ -175,6 +175,26 @@ describe("Chat: answer types", () => {
     const dialog = await screen.findByRole("dialog", { name: "Sources and inquiry" });
     expect(within(dialog).getByRole("heading", { name: "Sources for this answer" })).toBeVisible();
     expect(within(dialog).getByText(secondCitation!.excerpt)).toBeVisible();
+  });
+
+  it("answers the question in a purchase request first and then offers the inquiry", async () => {
+    const { user } = renderApp("/");
+
+    await ask(user, "I want to buy 20 P-240 printers, what is the warranty?");
+
+    // One reply: the answer with its sources, then the offer with the draft.
+    const log = conversation();
+    expect(await within(log).findByText(/2-year warranty/)).toBeVisible();
+    expect(log.querySelectorAll('[data-message-role="assistant"]')).toHaveLength(1);
+    const sources = within(log).getByRole("region", { name: "Sources" });
+    expect(within(sources).getByText("Version 4.0, page 1")).toBeVisible();
+    expect(within(log).getByRole("heading", { name: "Purchase inquiry" })).toBeVisible();
+    expect(within(log).getByText("Still needed: timeline, name, email.")).toBeVisible();
+
+    // Beside the chat the inquiry form opens; the sources stay one tab away.
+    expect(within(panel()).getByRole("heading", { name: "Purchase inquiry" })).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "Sources" }));
+    expect(within(panel()).getByRole("heading", { name: "Sources for this answer" })).toBeVisible();
   });
 
   it("shows a clarification as a plain assistant message", async () => {

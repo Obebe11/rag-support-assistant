@@ -374,5 +374,5 @@ def test_handler_modules_load_without_conflicts() -> None:
 
     load_handlers(registry)
 
-    # Indexing (T3) and delivery (T4) handlers are registered by their owners.
+    # Only the indexing and delivery handlers are registered.
     assert registry.job_types <= {"documents.index_version", "inquiries.deliver"}

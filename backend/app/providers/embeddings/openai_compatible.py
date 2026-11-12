@@ -1,6 +1,6 @@
 """Embedding provider for any API that implements OpenAI-style embeddings.
 
-Base URL, API key and model come from configuration only. Owner: T3.
+Base URL, API key and model come from configuration only.
 """
 
 from collections.abc import Sequence

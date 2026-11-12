@@ -214,9 +214,11 @@ def _failure_lines(results: Mapping[str, Any]) -> list[str]:
         lines.append(f"- Visitor: {_shorten(turn['user'])}")
         lines += [f"- Failed: {_shorten(reason, 400)}" for reason in failure["reasons"]]
         if turn["reply"] is not None:
-            lines.append(
-                f"- Reply (`{turn['reply']['answer_type']}`): {_shorten(turn['reply']['text'])}"
-            )
+            reply = turn["reply"]
+            label = f"`{reply['answer_type']}`"
+            if reply.get("answered_as", reply["answer_type"]) != reply["answer_type"]:
+                label += f", scored as `{reply['answered_as']}`"
+            lines.append(f"- Reply ({label}): {_shorten(reply['text'])}")
         lines.append("")
     return lines
 

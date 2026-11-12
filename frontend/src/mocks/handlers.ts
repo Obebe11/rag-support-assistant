@@ -250,6 +250,13 @@ function inquiryWithDelivery(inquiry: InquiryRead): InquiryRead {
   return delivery ? { ...inquiry, delivery: deliveryAt(delivery) } : inquiry;
 }
 
+function groundedReplyFor(text: string): MessageRead | null {
+  if (/warrant/.test(text)) return groundedWarrantyReply();
+  if (/return|refund/.test(text)) return groundedReturnsReply();
+  if (/ship|deliver|freight/.test(text)) return groundedShippingReply();
+  return null;
+}
+
 /** Pick a reply for a visitor message. The rules exist to reach every answer type by hand. */
 function replyTo(content: string, conversationId: string): MessageRead {
   const text = content.toLowerCase();
@@ -270,12 +277,13 @@ function replyTo(content: string, conversationId: string): MessageRead {
     );
     state.inquiries.set(draft.id, draft);
     reply = inquiryOfferReply(draft);
-  } else if (/warrant/.test(text)) {
-    reply = groundedWarrantyReply();
-  } else if (/return|refund/.test(text)) {
-    reply = groundedReturnsReply();
-  } else if (/ship|deliver|freight/.test(text)) {
-    reply = groundedShippingReply();
+    // A purchase request that also asks a question: the answer comes first, then the offer.
+    const answer = text.includes("?") ? groundedReplyFor(text) : null;
+    if (answer) {
+      reply = { ...reply, content: `${answer.content}\n\n${reply.content}`, citations: answer.citations };
+    }
+  } else if (groundedReplyFor(text)) {
+    reply = groundedReplyFor(text)!;
   } else if (/which|what about|printer\??$/.test(text) || text.length < 12) {
     reply = clarificationReply();
   } else {
@@ -426,7 +434,10 @@ export const handlers = [
     if (failure) return failure;
     const conversation = { id: nextId("d4d"), created_at: now(), messages: [] as MessageRead[] };
     state.conversations.set(conversation.id, conversation);
-    return HttpResponse.json({ ...conversation, updated_at: conversation.created_at }, { status: 201 });
+    return HttpResponse.json(
+      { ...conversation, updated_at: conversation.created_at, inquiries: [] },
+      { status: 201 },
+    );
   }),
 
   http.get("*/api/conversations/:id", async ({ params }) => {
@@ -437,6 +448,10 @@ export const handlers = [
     return HttpResponse.json({
       ...conversation,
       updated_at: conversation.messages.at(-1)?.created_at ?? conversation.created_at,
+      // Every inquiry of the conversation, oldest first; a handoff request is restored from here.
+      inquiries: [...state.inquiries.values()]
+        .filter((inquiry) => inquiry.conversation_id === conversation.id)
+        .map(inquiryWithDelivery),
       messages: conversation.messages.map((message) =>
         message.inquiry
           ? {

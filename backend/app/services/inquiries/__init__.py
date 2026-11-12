@@ -1,4 +1,1 @@
-"""Inquiry service: drafts, confirmation, delivery to the CRM and retries.
-
-Owner: T4.
-"""
+"""Inquiry service: drafts, confirmation, delivery to the CRM and retries."""

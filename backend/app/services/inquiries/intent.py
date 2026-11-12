@@ -1,6 +1,6 @@
 """The inquiry intent detector the chat service calls after each visitor message.
 
-Owner: T4. `build_inquiry_intent_detector` is part of the contract with the chat.
+`build_inquiry_intent_detector` is part of the contract with the chat.
 
 The detector decides whether the latest visitor message belongs to a purchase
 inquiry, extracts the fields it states, and creates or updates the purchase
@@ -196,6 +196,8 @@ class DraftingInquiryIntentDetector:
             fields=field_values(draft),
             missing_fields=tuple(missing_fields(draft)),
             inquiry_id=draft.id,
+            # Read by rules in every mode: which sentences ask something is not the LLM's call.
+            question=extraction.question_part(turns[-1].content),
         )
 
     @staticmethod

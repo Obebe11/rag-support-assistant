@@ -1,6 +1,6 @@
 """Rule-based reading of a visitor message: purchase intent and inquiry fields.
 
-Owner: T4. Used when no live LLM is configured, and as the fallback when the
+Used when no live LLM is configured, and as the fallback when the
 LLM call fails. The rules prefer missing an inquiry over inventing one: a
 question about a policy must never open an inquiry, because the visitor can
 always state the request again, while a wrong offer breaks a grounded answer.
@@ -114,10 +114,20 @@ _POLICY_CORE = re.compile(
     r"exchanges?|exchanging|cancel(?:lation|ing|s)?)\b",
     _I,
 )
+_QUESTION_WORD = (
+    r"(?:how|what|whats|what's|when|where|why|who|which|is|are|was|were|does|do|did|will|"
+    r"should|has|have)"
+)
 _QUESTION_START = re.compile(
     r"^(?:(?:hi|hello|hey|so|and|but|also|ok|okay|thanks|thank you)[,!. ]+)*"
-    r"(?:how|what|whats|what's|when|where|why|who|which|is|are|was|were|does|do|did|will|"
-    r"should|has|have)\b",
+    rf"{_QUESTION_WORD}\b",
+    _I,
+)
+# Where a question starts inside a sentence that began as a statement:
+# "I want 12 printers, what is the warranty?"
+_TRAILING_QUESTION = re.compile(
+    r"(?:\s*[,;:]\s*(?:(?:and|but|so|also)\s+)*|\s+[-\u2013\u2014]\s+|\s+(?:and|but)\s+(?:also\s+)?)"
+    rf"(?=(?:{_QUESTION_WORD}|can|could|would)\b)",
     _I,
 )
 
@@ -258,7 +268,37 @@ def _normalize(text: str) -> str:
 
 
 def _sentences(text: str) -> list[str]:
-    return [part.strip() for part in _SENTENCE_BREAK.split(text) if part.strip()]
+    return [
+        clause
+        for part in _SENTENCE_BREAK.split(text)
+        if part.strip()
+        for clause in _request_and_question(part.strip())
+    ]
+
+
+def _request_and_question(sentence: str) -> list[str]:
+    """Split a request that runs into a question: "I want 12 printers, what is the warranty?".
+
+    The sentence is split only when the part before the question asks to buy and
+    names a quantity and a product. Every other sentence stays whole, so a what-if
+    ("If I order 10 printers, what is the warranty?") and a question that only
+    mentions buying ("I want to buy but first, what's the return policy?") are
+    still read as one question.
+    """
+    if not sentence.endswith("?") or _QUESTION_START.search(sentence):
+        return [sentence]
+    for match in _TRAILING_QUESTION.finditer(sentence):
+        request, question = sentence[: match.start()].strip(), sentence[match.end() :].strip()
+        if request and _states_intent(request) and _names_quantity_and_product(request):
+            return [request, question]
+    return [sentence]
+
+
+def _names_quantity_and_product(text: str) -> bool:
+    return any(
+        _number(match.group("quantity")) and _clean_product(match.group("product"))
+        for match in _QUANTITY_PRODUCT.finditer(text)
+    )
 
 
 def _is_question(sentence: str) -> bool:
@@ -306,6 +346,21 @@ def asks_about_policy(text: str) -> bool:
         or (_is_question(sentence) and _HYPOTHETICAL.search(sentence))
         for sentence in sentences
     )
+
+
+def question_part(text: str) -> str | None:
+    """The sentences of a message that ask something other than to buy, or None.
+
+    "We want to order 12 shredders. Would shipping be free?" asks a question next
+    to the request; "Can I get a quote for 20 desks?" does not: the question is
+    the request.
+    """
+    questions = [
+        sentence
+        for sentence in _sentences(_normalize(text))
+        if _is_question(sentence) and not _states_intent(sentence)
+    ]
+    return " ".join(questions) or None
 
 
 def might_concern_a_purchase(text: str) -> bool:

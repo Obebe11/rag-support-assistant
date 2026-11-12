@@ -23,7 +23,7 @@ The rest of the frontend imports this folder through the `~` alias (`~/component
 
 ## Files copied with small changes
 
-Each change is marked in the file with a `Handoff AI:` comment.
+A change inside existing code is marked in the file with a `Handoff AI:` comment. A file whose change is a removal or a replaced import is described in the table only.
 
 | File | Source | Change |
 | --- | --- | --- |

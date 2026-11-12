@@ -1,7 +1,5 @@
 """Simulated CRM mode: no network calls, clearly labeled as not a real CRM.
 
-Owner: T4.
-
 The simulated CRM keeps contacts and records in the memory of the process that
 delivers (the worker). Record IDs are derived from the contact email and the
 idempotency key, so the same inquiry always gets the same IDs, also after a

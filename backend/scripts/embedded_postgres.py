@@ -8,12 +8,14 @@ directory, so it never takes a TCP port.
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
-from pixeltable_pgserver.postgres_server import PostgresServer, get_server
+if TYPE_CHECKING:
+    from pixeltable_pgserver.postgres_server import PostgresServer
 
 
-def _asyncpg_url(server: PostgresServer, database: str) -> str:
+def _asyncpg_url(server: "PostgresServer", database: str) -> str:
     info = server.get_postmaster_info()
     if info.socket_dir is not None:
         return (
@@ -32,6 +34,10 @@ def embedded_postgres(data_dir: Path, database: str = "handoff") -> Iterator[str
     """
     if not database.isidentifier():
         raise ValueError(f"Not a valid database name: {database!r}")
+    # Imported here: the package is a development dependency, and the scripts that
+    # are given a DATABASE_URL (as in the container image) must load without it.
+    from pixeltable_pgserver.postgres_server import get_server
+
     data_dir.mkdir(parents=True, exist_ok=True)
     server = get_server(data_dir, cleanup_mode="stop")
     try:

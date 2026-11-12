@@ -7,7 +7,9 @@ together, or not at all.
 Order of decisions for a new message:
 
 1. An attempt to override the assistant's instructions is declined (`refusal`).
-2. The inquiry module is asked about purchase intent (`inquiry_offer`).
+2. The inquiry module is asked about purchase intent (`inquiry_offer`). When the
+   same message also asks a question, the reply answers it from the knowledge
+   base first and then offers the inquiry.
 3. Otherwise the knowledge base is searched and the reply is `grounded`,
    `knowledge_gap` or `clarification`.
 """
@@ -16,7 +18,7 @@ import asyncio
 import time
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -29,6 +31,7 @@ from app.models.enums import AnswerType, MessageRole
 from app.providers.embeddings.base import EmbeddingProvider
 from app.providers.llm.base import ChatMessage, LLMProvider
 from app.schemas.conversations import (
+    Citation,
     ConversationRead,
     MessageRead,
     MessageUsage,
@@ -36,6 +39,7 @@ from app.schemas.conversations import (
 )
 from app.schemas.inquiries import InquiryField
 from app.services.chat.answering import (
+    QUESTION_GAP_TEXT,
     REFUSAL_TEXT,
     AnswerDraft,
     Passage,
@@ -50,7 +54,7 @@ from app.services.chat.guard import (
 )
 from app.services.chat.llm_answer import compose_llm_answer
 from app.services.documents.retrieval import RetrievedChunk, combine, search_by_vector
-from app.services.inquiries.service import read_inquiries
+from app.services.inquiries.service import read_conversation_inquiries, read_inquiries
 from app.services.inquiry_intent import ConversationTurn, InquiryIntent, InquiryIntentDetector
 
 CANDIDATE_LIMIT = 20
@@ -83,6 +87,8 @@ class _Reply:
     inquiry_id: uuid.UUID | None = None
     retrieved: Sequence[RetrievedChunk] = ()
     retrieval_time_ms: int | None = None
+    question_answer_type: AnswerType | None = None
+    """How the question inside a purchase message was answered; see `_offer_after_answer`."""
 
 
 async def create_conversation(session: AsyncSession) -> Conversation:
@@ -158,8 +164,17 @@ async def _answer_from_documents(
     embeddings: EmbeddingProvider,
     question: str,
     exchanges: Sequence[tuple[Message, Message]],
+    message: str | None = None,
 ) -> _Reply:
-    context = "\n".join(user.content for user, _ in exchanges[-CONTEXT_TURNS:])
+    """Search the knowledge base and answer `question`.
+
+    `message` is the whole visitor message when `question` is only a part of it
+    (a question next to a purchase request). The search and the local reply work
+    on the question; a live LLM reads the whole message.
+    """
+    earlier = [user.content for user, _ in exchanges[-CONTEXT_TURNS:]]
+    # The rest of the same message names what the question is about ("12 LP-420 printers").
+    context = "\n".join([*earlier, message] if message else earlier)
     started = time.perf_counter()
     query_vector = await _query_vector(embeddings, question, context)
     candidates = await search_by_vector(
@@ -192,11 +207,41 @@ async def _answer_from_documents(
             for exchange in exchanges
             for message in exchange
         ][-LLM_HISTORY_MESSAGES:]
-        draft = await compose_llm_answer(llm, question, history, passages)
+        draft = await compose_llm_answer(llm, message or question, history, passages)
     else:
         draft = compose_extractive_answer(question, context, passages, usable)
     return _Reply(
         draft, retrieved=candidates[:ANSWER_PASSAGES], retrieval_time_ms=retrieval_time_ms
+    )
+
+
+def _offer_after_answer(offer: _Reply, answered: _Reply) -> _Reply:
+    """One reply to a message that asks to buy and asks a question: the answer, then the offer.
+
+    The reply stays an `inquiry_offer`. A grounded answer brings its citations; a
+    knowledge gap is acknowledged without a second call to action, because the
+    inquiry already goes to a person. A clarifying question or a refusal from the
+    LLM is not merged: the offer already asks the visitor for details.
+    """
+    answer = answered.draft
+    offer_text = offer.draft.text
+    citations: list[Citation] = []
+    note = answer.note
+    if answer.answer_type is AnswerType.GROUNDED:
+        text, citations = f"{answer.text}\n\n{offer_text}", answer.citations
+    elif answer.answer_type is AnswerType.KNOWLEDGE_GAP:
+        text = f"{QUESTION_GAP_TEXT}\n\n{offer_text}"
+    else:
+        text = offer_text
+        note = f"The question in the message got no answer ({answer.answer_type.value})."
+    merged = text != offer_text
+    return replace(
+        answered,
+        draft=replace(
+            answer, answer_type=AnswerType.INQUIRY_OFFER, text=text, citations=citations, note=note
+        ),
+        inquiry_id=offer.inquiry_id,
+        question_answer_type=answer.answer_type if merged else None,
     )
 
 
@@ -232,6 +277,7 @@ def _usage(
             for rank, chunk in enumerate(reply.retrieved, start=1)
         ],
         note=reply.draft.note,
+        question_answer_type=reply.question_answer_type,
     )
 
 
@@ -270,6 +316,16 @@ async def post_message(
                 AnswerDraft(AnswerType.INQUIRY_OFFER, inquiry_offer_text(intent)),
                 inquiry_id=intent.inquiry_id,
             )
+            if intent.question:
+                answered = await _answer_from_documents(
+                    session,
+                    llm=llm,
+                    embeddings=embeddings,
+                    question=intent.question,
+                    exchanges=_answered_exchanges(earlier),
+                    message=content,
+                )
+                reply = _offer_after_answer(reply, answered)
         else:
             reply = await _answer_from_documents(
                 session,
@@ -332,4 +388,5 @@ async def to_conversation_read(
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
         messages=await to_message_reads(session, conversation.messages),
+        inquiries=await read_conversation_inquiries(session, conversation.id),
     )

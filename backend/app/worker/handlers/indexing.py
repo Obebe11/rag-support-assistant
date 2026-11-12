@@ -1,4 +1,4 @@
-"""Document indexing jobs. Owner: T3.
+"""Document indexing jobs.
 
 Registers the handler for `app.worker.job_types.INDEX_DOCUMENT_VERSION`, and the
 hook that fails a version whose worker died during the final attempt.

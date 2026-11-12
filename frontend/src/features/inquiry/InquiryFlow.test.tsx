@@ -100,7 +100,7 @@ describe("Purchase inquiry", () => {
 
     expect(panel().getByLabelText("Quantity")).toHaveAccessibleDescription("Enter a whole number of 1 or more.");
     expect(panel().getByLabelText("Email")).toHaveAccessibleDescription(
-      "Enter an email address like name@company.com.",
+      "Enter an email address like name@example.com.",
     );
   });
 
@@ -448,5 +448,74 @@ describe("Human handoff", () => {
     expect(panel().getByText(/nobody receives this request/)).toBeVisible();
     expect(within(conversation()).getByRole("heading", { name: "Question for the Northline team" })).toBeVisible();
     expect(within(conversation()).getByText("Delivery simulated")).toBeVisible();
+  });
+
+  async function sendHandoff(user: UserEvent, email = "marcus@example.org") {
+    await openHandoff(user);
+    await user.type(panel().getByLabelText("Name"), "Marcus Oyelaran");
+    await user.type(panel().getByLabelText("Email"), email);
+    await user.click(panel().getByRole("button", { name: "Review request" }));
+    await panel().findByRole("heading", { name: "Review your request" });
+    await user.click(panel().getByRole("button", { name: "Confirm and send" }));
+  }
+
+  it("keeps the request and its delivery status after a page reload", async () => {
+    const first = renderApp("/");
+    await sendHandoff(first.user);
+    await panel().findByText("Delivery simulated");
+    first.unmount();
+
+    const { user } = renderApp("/");
+
+    // The card of the request is back on the reply it was made from; no second offer.
+    const log = within(conversation());
+    expect(await log.findByRole("heading", { name: "Question for the Northline team" })).toBeVisible();
+    expect(log.getByText("Delivery simulated")).toBeVisible();
+    expect(log.getByText("Do you sell standing desks in walnut?", { selector: "p" })).toBeVisible();
+    expect(log.queryByRole("button", { name: "Talk to a person" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
+
+    await user.click(log.getByRole("button", { name: "View delivery status" }));
+
+    expect(await panel().findByText(/nobody receives this request/)).toBeVisible();
+    expect(panel().getByText("Marcus Oyelaran")).toBeVisible();
+  });
+
+  it("restores a failed delivery after a reload and sends it again", async () => {
+    const first = renderApp("/");
+    await sendHandoff(first.user, "marcus+reject1@example.org");
+    await panel().findByText("Simulated delivery failed");
+    first.unmount();
+
+    const { user } = renderApp("/");
+    const log = within(conversation());
+    expect(await log.findByText("Simulated delivery failed")).toBeVisible();
+    await user.click(log.getByRole("button", { name: "View delivery status" }));
+    await user.click(await panel().findByRole("button", { name: "Send again" }));
+
+    expect(await panel().findByText("Delivery simulated")).toBeVisible();
+    expect(log.getByText("Delivery simulated")).toBeVisible();
+  });
+
+  it("restores a request that was saved but not confirmed as a draft to review", async () => {
+    const first = renderApp("/");
+    await openHandoff(first.user);
+    await first.user.type(panel().getByLabelText("Name"), "Marcus Oyelaran");
+    await first.user.type(panel().getByLabelText("Email"), "marcus@example.org");
+    await first.user.click(panel().getByRole("button", { name: "Review request" }));
+    await panel().findByRole("heading", { name: "Review your request" });
+    first.unmount();
+
+    const { user } = renderApp("/");
+    const creations = countRequests("post", "*/api/inquiries");
+    const log = within(conversation());
+    expect(await log.findByText("Draft")).toBeVisible();
+    await user.click(log.getByRole("button", { name: "Open request form" }));
+
+    // The saved draft is edited, not created a second time.
+    expect(panel().getByLabelText("Name")).toHaveValue("Marcus Oyelaran");
+    await user.click(panel().getByRole("button", { name: "Review request" }));
+    await panel().findByRole("heading", { name: "Review your request" });
+    expect(creations.count).toBe(0);
   });
 });

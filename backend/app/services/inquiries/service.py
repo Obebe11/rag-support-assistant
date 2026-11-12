@@ -1,6 +1,6 @@
 """Inquiry drafts, confirmation, delivery status and manual retries.
 
-Owner: T4. Functions that change data commit their own unit of work, except
+Functions that change data commit their own unit of work, except
 `create_draft_in_session` and `apply_fields`, which the intent detector uses
 inside the chat's transaction.
 """
@@ -244,6 +244,30 @@ async def read_inquiries(
         .all()
     )
     return {inquiry.id: inquiry_to_read(inquiry) for inquiry in inquiries}
+
+
+async def read_conversation_inquiries(
+    session: AsyncSession, conversation_id: uuid.UUID
+) -> list[InquiryRead]:
+    """Every inquiry of a conversation in its current state, oldest first.
+
+    For the chat: a human handoff request is created by the client and is not
+    attached to a message, so the conversation lists it. Does not commit.
+    """
+    inquiries = (
+        (
+            await session.execute(
+                select(Inquiry)
+                .where(Inquiry.conversation_id == conversation_id)
+                .order_by(Inquiry.created_at, Inquiry.id)
+                .options(_WITH_DELIVERY)
+                .execution_options(populate_existing=True)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [inquiry_to_read(inquiry) for inquiry in inquiries]
 
 
 async def get_delivery(session: AsyncSession, inquiry_id: uuid.UUID) -> InquiryDelivery:

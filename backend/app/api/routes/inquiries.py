@@ -1,4 +1,4 @@
-"""Visitor inquiry endpoints. Owner: T4."""
+"""Visitor inquiry endpoints."""
 
 import uuid
 from http import HTTPStatus

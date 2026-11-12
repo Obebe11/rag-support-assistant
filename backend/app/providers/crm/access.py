@@ -1,7 +1,4 @@
-"""Keeps the latest CRM access check result for `/api/health`.
-
-Owner: T4.
-"""
+"""Keeps the latest CRM access check result for `/api/health`."""
 
 import asyncio
 import logging

@@ -98,7 +98,12 @@ def test_failure_tags_are_read_from_the_contact_email(
 
 @pytest.mark.parametrize(
     "email",
-    ["buyer@example.com", "buyer+sales@example.com", "fail@example.com", "reject1@fail.com"],
+    [
+        "buyer@example.com",
+        "buyer+sales@example.com",
+        "fail@example.com",
+        "reject1@fail.example.com",
+    ],
 )
 def test_ordinary_emails_do_not_trigger_a_failure(email: str) -> None:
     assert simulated_failure_for(email) is None

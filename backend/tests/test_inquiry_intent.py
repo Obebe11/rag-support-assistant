@@ -174,6 +174,48 @@ def test_agreement_is_read_as_a_confirmation_only_while_a_draft_is_open() -> Non
     assert read_message("Yes, looks good").intent is False
 
 
+@pytest.mark.parametrize(
+    ("message", "question"),
+    [
+        ("We want to order 12 S-300 shredders. Would shipping be free?", "Would shipping be free?"),
+        ("I want 12 LP-420 printers, what is the warranty?", "what is the warranty?"),
+        ("We need 20 chairs and are they in stock?", "are they in stock?"),
+        (
+            "I'd like to order 20 desks. Do you ship to Canada? And how long is the warranty?",
+            "Do you ship to Canada? And how long is the warranty?",
+        ),
+        # The question is the request itself.
+        ("Can I get a quote for 15 ergonomic chairs?", None),
+        ("Can we order 10 filing cabinets?", None),
+        ("I'd like to order 20 standing desks by the end of March.", None),
+    ],
+)
+def test_a_question_next_to_a_purchase_request_is_found(message: str, question: str | None) -> None:
+    assert has_purchase_intent(message)
+    assert extraction.question_part(message) == question
+
+
+def test_a_request_that_runs_into_a_question_is_read_as_a_request() -> None:
+    reading = read_message("I want 12 LP-420 printers, what is the warranty?")
+
+    assert reading.intent is True
+    assert dict(reading.fields) == {F.QUANTITY: 12, F.PRODUCT: "LP-420 printers"}
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "If I order 10 printers, what is the warranty?",
+        "We ordered 12 printers last week, when will they arrive?",
+        "I want to buy a printer, what is the warranty?",
+        "I need 5 days to decide, is that okay?",
+    ],
+)
+def test_a_question_that_mentions_buying_is_not_split_into_a_request(message: str) -> None:
+    assert not has_purchase_intent(message)
+    assert read_message(message) == extraction.MessageReading()
+
+
 # --- The detector on the database ---------------------------------------------
 
 
@@ -495,6 +537,56 @@ async def test_assistant_turn_last_means_no_intent(
 
 async def test_application_wires_the_drafting_detector(app: FastAPI) -> None:
     assert isinstance(app.state.inquiry_intent_detector, DraftingInquiryIntentDetector)
+
+
+async def test_the_detector_reports_the_question_asked_next_to_the_request(
+    session_factory: SessionFactory,
+    rules_detector: DraftingInquiryIntentDetector,
+    conversation_id: uuid.UUID,
+) -> None:
+    asked = await _assess(
+        session_factory,
+        rules_detector,
+        conversation_id,
+        "I want 12 LP-420 printers, what is the warranty?",
+    )
+    plain = await _assess(
+        session_factory,
+        rules_detector,
+        conversation_id,
+        "I want 12 LP-420 printers, what is the warranty?",
+        "My email is dana@example.com.",
+    )
+    during_draft = await _assess(
+        session_factory,
+        rules_detector,
+        conversation_id,
+        "I want 12 LP-420 printers, what is the warranty?",
+        "My email is dana@example.com.",
+        "I need them by March 15. Can I return an opened printer?",
+    )
+
+    assert (asked.detected, asked.question) == (True, "what is the warranty?")
+    assert asked.fields == {F.PRODUCT: "LP-420 printers", F.QUANTITY: 12}
+    assert (plain.detected, plain.question) == (True, None)
+    assert during_draft.question == "Can I return an opened printer?"
+    assert during_draft.fields[F.TIMELINE] == "by March 15"
+    assert len(await _inquiries(session_factory)) == 1
+
+
+async def test_the_question_is_found_by_rules_when_the_llm_reads_the_request(
+    session_factory: SessionFactory, conversation_id: uuid.UUID
+) -> None:
+    detector = DraftingInquiryIntentDetector(FakeLLM(_reply(True, product="desks", quantity=20)))
+
+    intent = await _assess(
+        session_factory,
+        detector,
+        conversation_id,
+        "I'd like to order 20 desks. Is assembly included?",
+    )
+
+    assert (intent.detected, intent.question) == (True, "Is assembly included?")
 
 
 # --- With a live LLM ----------------------------------------------------------

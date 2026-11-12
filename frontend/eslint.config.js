@@ -18,7 +18,7 @@ export default defineConfig([
     },
   },
   {
-    // UI primitives copied unchanged from T3 Code (see src/t3code/README.md).
+    // UI primitives copied from T3 Code, one with small changes (see src/t3code/README.md).
     // They keep upstream conventions that the project rules reject.
     files: ["src/t3code/components/ui/**/*.{ts,tsx}"],
     rules: {

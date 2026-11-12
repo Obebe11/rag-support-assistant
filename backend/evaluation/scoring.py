@@ -31,7 +31,7 @@ REVIEW = "review"
 NOT_APPLICABLE = "not_applicable"
 
 TOP_K = 5
-"""The plan measures expected-source retrieval in the top five results."""
+"""Expected-source retrieval is measured in the top five results."""
 
 HEADING_SEPARATOR = " > "
 """Joins the heading path of a chunk, as `app.services.documents.chunking` writes it."""

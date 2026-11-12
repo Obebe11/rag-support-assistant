@@ -1,4 +1,4 @@
-"""Assembles the API. Shared file: T3 and T4 edit only their own route modules."""
+"""Assembles the API."""
 
 from fastapi import APIRouter, Depends
 

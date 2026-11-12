@@ -1,7 +1,5 @@
 """Local embedding mode: offline and deterministic, no external API.
 
-Owner: T3.
-
 The vector is a hashed bag of words: stemmed terms and adjacent term pairs are
 hashed into a fixed number of buckets, weighted by a damped term frequency and
 normalized to unit length. It matches passages that share words with the query.

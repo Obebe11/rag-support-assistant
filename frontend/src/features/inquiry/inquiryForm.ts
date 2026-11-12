@@ -141,7 +141,7 @@ export function validateInquiry(kind: InquiryKind, values: InquiryValues): Inqui
       }
     }
     if (field === "contact_email" && !EMAIL_PATTERN.test(value)) {
-      errors.contact_email = "Enter an email address like name@company.com.";
+      errors.contact_email = "Enter an email address like name@example.com.";
     }
     if (field === "contact_phone" && value.length < 3) {
       errors.contact_phone = "Enter at least 3 characters.";

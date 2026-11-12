@@ -1,5 +1,6 @@
 # Local stack: PostgreSQL with pgvector, migrations, API, worker and frontend.
 # Usage: cp .env.example .env && docker compose up --build
+# Load the demo knowledge base once: docker compose run --rm seed
 name: handoff-ai
 
 x-backend: &backend
@@ -54,6 +55,15 @@ services:
   worker:
     <<: *backend
     command: ["python", "-m", "app.worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # One-off: loads the Northline demo documents. Not started by `docker compose up`.
+  seed:
+    <<: *backend
+    profiles: ["seed"]
+    command: ["python", "-m", "scripts.seed_knowledge_base"]
     depends_on:
       migrate:
         condition: service_completed_successfully

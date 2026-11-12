@@ -271,7 +271,7 @@ async def _judge_turn(judge: Judge, turn: Turn, result: dict[str, Any]) -> None:
         item["judge"] = verdict
         if verdict["verdict"] != ERROR:
             verdicts[item["check"]] = verdict["verdict"]
-    if reply["answer_type"] == "grounded" and reply["citations"]:
+    if reply["answered_as"] == "grounded" and reply["citations"]:
         checks["judge_support"] = await judge.is_supported(
             user=turn.user,
             reply=reply["text"],
@@ -328,8 +328,14 @@ async def _run_turn(
     ]
     for citation in citations:
         del citation["rank"]
+    # A reply to a purchase request that also asks a question is an `inquiry_offer`
+    # that answers the question first. The answer is what the case is about.
+    answered_as = message["answer_type"]
+    if answered_as == "inquiry_offer" and usage.get("question_answer_type"):
+        answered_as = usage["question_answer_type"]
     result["reply"] = {
         "answer_type": message["answer_type"],
+        "answered_as": answered_as,
         "text": message["content"],
         "citations": citations,
         "inquiry_offered": message["inquiry"] is not None,
@@ -340,7 +346,7 @@ async def _run_turn(
 
     checks = score_turn(
         turn.expect,
-        answer_type=message["answer_type"],
+        answer_type=answered_as,
         text=message["content"],
         citations=[(_as_passage(citation), citation["excerpt"]) for citation in citations],
         search_top=[_as_passage(item) for item in search_top],

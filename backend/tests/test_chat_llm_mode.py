@@ -237,6 +237,76 @@ async def test_a_knowledge_gap_from_the_llm_always_offers_a_person(
     assert unknown_type["answer_type"] == "knowledge_gap"
 
 
+PURCHASE_WITH_QUESTION = (
+    "I would like to buy 12 LP-420 label printers. What is the restocking fee for an opened item?"
+)
+OFFER_TEXT = (
+    "I can prepare a purchase inquiry for the sales team. To complete it, please tell me "
+    "when you need it, your name and your email address."
+)
+
+
+async def test_a_question_next_to_a_purchase_request_is_answered_by_the_llm_before_the_offer(
+    client: httpx.AsyncClient, llm: _FakeLLM
+) -> None:
+    llm.reply = lambda payload: llm.completion(
+        {
+            "answer_type": "grounded",
+            "answer": "An opened item in like-new condition is refunded less a 15% restocking fee.",
+            "citations": [llm.excerpt_number(payload, "Item condition and refund amount")],
+        }
+    )
+
+    reply = await ask(client, PURCHASE_WITH_QUESTION)
+
+    assert reply["answer_type"] == "inquiry_offer"
+    assert reply["content"] == (
+        "An opened item in like-new condition is refunded less a 15% restocking fee."
+        f"\n\n{OFFER_TEXT}"
+    )
+    assert [citation["document_title"] for citation in reply["citations"]] == ["Returns Policy"]
+    assert reply["inquiry"]["quantity"] == 12
+    usage = reply["usage"]
+    assert usage["question_answer_type"] == "grounded"
+    assert (usage["input_tokens"], usage["output_tokens"]) == (812, 37)
+    # The LLM reads the whole message, so it knows what the question is about.
+    [request] = llm.requests
+    assert f"Visitor's message: {PURCHASE_WITH_QUESTION}" in request["messages"][-1]["content"]
+
+
+async def test_a_gap_next_to_a_purchase_request_does_not_offer_a_second_handoff(
+    client: httpx.AsyncClient, llm: _FakeLLM
+) -> None:
+    llm.reply = lambda _: llm.completion(
+        {"answer_type": "knowledge_gap", "answer": "The documents do not say. Ask the team."}
+    )
+
+    reply = await ask(client, PURCHASE_WITH_QUESTION)
+
+    assert reply["answer_type"] == "inquiry_offer"
+    assert reply["content"].startswith("I could not find an answer to your question")
+    assert "Ask the team" not in reply["content"]
+    assert reply["content"].endswith(OFFER_TEXT)
+    assert reply["citations"] == []
+    assert reply["usage"]["question_answer_type"] == "knowledge_gap"
+
+
+async def test_a_clarifying_question_from_the_llm_is_not_merged_into_the_offer(
+    client: httpx.AsyncClient, llm: _FakeLLM
+) -> None:
+    llm.reply = lambda _: llm.completion(
+        {"answer_type": "clarification", "answer": "Which item do you mean?"}
+    )
+
+    reply = await ask(client, PURCHASE_WITH_QUESTION)
+
+    assert reply["answer_type"] == "inquiry_offer"
+    assert reply["content"] == OFFER_TEXT
+    assert reply["citations"] == []
+    assert reply["usage"]["question_answer_type"] is None
+    assert reply["usage"]["note"] == "The question in the message got no answer (clarification)."
+
+
 async def test_a_refusal_from_the_llm_is_stored_as_a_refusal(
     client: httpx.AsyncClient, llm: _FakeLLM
 ) -> None:

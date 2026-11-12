@@ -20,8 +20,9 @@ describe("App routes", () => {
   it("shows the admin sign-in at /admin and a way back to the chat", async () => {
     renderApp("/admin");
 
+    // The header is there at once; the admin code arrives as a separate file.
     expect(screen.getByRole("heading", { level: 1, name: "Admin" })).toBeVisible();
-    expect(screen.getByLabelText("Admin token")).toBeVisible();
+    expect(await screen.findByLabelText("Admin token")).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to chat" })).toHaveAttribute("href", "/");
     expect(await screen.findByRole("button", { name: "Demo mode" })).toBeVisible();
   });

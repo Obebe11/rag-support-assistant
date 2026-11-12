@@ -1,4 +1,4 @@
-"""Visitor chat endpoints. Owner: T3."""
+"""Visitor chat endpoints."""
 
 import logging
 import uuid

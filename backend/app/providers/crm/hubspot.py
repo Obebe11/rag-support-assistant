@@ -1,6 +1,6 @@
 """HubSpot CRM provider: delivers confirmed inquiries to a HubSpot account.
 
-Owner: T4. Not verified against a live HubSpot account: the behavior below
+Not verified against a live HubSpot account: the behavior below
 follows the official documentation and is tested with a mock transport only.
 See docs/inquiries.md for the sources, the required scopes and the limits.
 

@@ -1,7 +1,5 @@
 """Delivers one confirmed inquiry to the CRM. Runs inside the delivery job.
 
-Owner: T4.
-
 Each run is one attempt:
 
 1. Mark the delivery `in_progress` and commit, so the status is visible while

@@ -15,6 +15,7 @@ import { useHealth } from "../../hooks/useHealth";
 import type { UiError } from "../../lib/errors";
 import { describeDelivery } from "./deliveryStatus";
 import type { DeliveryPhase } from "./deliveryStatus";
+import { EmailText } from "./EmailText";
 import { FIELD_LABELS, FIELDS_BY_KIND, MAX_LENGTH, REQUIRED_BY_KIND, valuesFromInquiry } from "./inquiryForm";
 import type { InquiryFlow, InquiryStep } from "./useInquiryFlow";
 
@@ -199,7 +200,7 @@ function SummaryList(props: { flow: InquiryFlow }) {
         <div key={field} className="flex gap-3 border-b border-border/60 py-2 text-sm last:border-b-0">
           <dt className="w-[4.5rem] shrink-0 text-muted-foreground">{FIELD_LABELS[flow.kind][field]}</dt>
           <dd className="m-0 min-w-0 flex-1 whitespace-pre-wrap text-foreground [overflow-wrap:anywhere]">
-            {stored[field]}
+            {field === "contact_email" ? <EmailText email={stored[field]} /> : stored[field]}
           </dd>
         </div>
       ))}
@@ -318,7 +319,7 @@ const STEP_INTRO: Record<InquiryStep, (kind: InquiryKind) => string> = {
       ? "Send your question to the Northline team. You review it before it is sent."
       : "Tell us what you need. You review the inquiry before it is sent.",
   preview: () => "Nothing is sent until you confirm.",
-  status: (kind) => `Your ${noun(kind)} is confirmed. This page follows its delivery.`,
+  status: (kind) => `Your ${noun(kind)} is confirmed. Its delivery status is shown below.`,
 };
 
 /** The inquiry path in the side panel: details, review with explicit confirmation, delivery status. */

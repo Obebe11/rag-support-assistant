@@ -48,17 +48,6 @@ class ApiError(Exception):
         self.headers = dict(headers) if headers else None
 
 
-class NotImplementedApiError(ApiError):
-    """Raised by endpoints that are declared in the contract but not built yet."""
-
-    def __init__(self, feature: str) -> None:
-        super().__init__(
-            HTTPStatus.NOT_IMPLEMENTED,
-            ErrorCode.NOT_IMPLEMENTED,
-            f"{feature} is not implemented yet.",
-        )
-
-
 class NotFoundError(ApiError):
     def __init__(self, message: str) -> None:
         super().__init__(HTTPStatus.NOT_FOUND, ErrorCode.NOT_FOUND, message)

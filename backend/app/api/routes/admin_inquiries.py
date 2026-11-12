@@ -1,4 +1,4 @@
-"""Inquiry administration endpoints. Owner: T4."""
+"""Inquiry administration endpoints."""
 
 from typing import Annotated
 

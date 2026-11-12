@@ -1,4 +1,4 @@
-"""Knowledge base administration endpoints. Owner: T3."""
+"""Knowledge base administration endpoints."""
 
 import uuid
 from http import HTTPStatus

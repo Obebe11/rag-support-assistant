@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup dev db migrate seed eval openapi check check-backend check-frontend
+.PHONY: help setup dev db migrate seed eval smoke openapi check check-backend check-frontend
 
 help: ## Show the available commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-16s %s\n", $$1, $$2}'
@@ -22,6 +22,9 @@ seed: ## Load the Northline knowledge base (idempotent; indexes in place, needs 
 
 eval: ## Run the evaluation cases on an isolated database and write a report (EVAL_ARGS="--judge")
 	cd backend && uv run python -m scripts.run_evals $(EVAL_ARGS)
+
+smoke: ## Walk the demo scenario over HTTP on an isolated database, in the local and simulated modes
+	cd backend && uv run python -m scripts.smoke
 
 openapi: ## Regenerate docs/openapi.json and the frontend API types
 	cd backend && uv run python -m scripts.export_openapi

@@ -474,6 +474,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Inquiries
+             * @description Every inquiry of the conversation in its current state, oldest first: purchase inquiries and human handoff requests, drafts and confirmed ones. A handoff request is not attached to a message, so a client restores it from this list.
+             */
+            inquiries?: components["schemas"]["InquiryRead"][];
             /** Messages */
             messages?: components["schemas"]["MessageRead"][];
             /**
@@ -848,7 +853,10 @@ export interface components {
         MessageRead: {
             /** @description Set on assistant messages only. */
             answer_type?: components["schemas"]["AnswerType"] | null;
-            /** Citations */
+            /**
+             * Citations
+             * @description Sources of a `grounded` answer. An `inquiry_offer` has them when the visitor's message also asked a question that the documents answer.
+             */
             citations?: components["schemas"]["Citation"][];
             /** Content */
             content: string;
@@ -914,6 +922,8 @@ export interface components {
              * @description LLM completion tokens, when the API reports them.
              */
             output_tokens?: number | null;
+            /** @description Set on an `inquiry_offer` reply to a message that also asked a question: how the question was answered, `grounded` or `knowledge_gap`. The citations of the message support that answer. */
+            question_answer_type?: components["schemas"]["AnswerType"] | null;
             /**
              * Response Time Ms
              * @description Time to produce the reply, in milliseconds.

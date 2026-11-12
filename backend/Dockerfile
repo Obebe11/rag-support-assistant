@@ -14,6 +14,8 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --locked --no-dev
 
 COPY backend/ ./
+# The demo knowledge base, for `docker compose run --rm seed`.
+COPY knowledge-base/northline/ /app/knowledge-base/northline/
 
 RUN useradd --system --no-create-home app
 USER app
