@@ -1,8 +1,8 @@
 # Architecture
 
-Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes the foundation: the repository layout, the data model, the API contract, the provider modes, background jobs, and who owns which module.
+Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes how the system is built: the repository layout, the data model, the API contract, the provider modes, the chat and inquiry logic, background jobs, the frontend and the development commands.
 
-Status: the knowledge base and chat endpoints are implemented and described in [Knowledge base and chat](#knowledge-base-and-chat); inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
+Status: everything described here is implemented and covered by automated tests in the local and simulated modes. What has not been run (a live LLM, a live embedding API, a live HubSpot account, Docker Compose) is listed in [Known limits](#known-limits). Inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
 
 ## Repository layout
 
@@ -18,7 +18,7 @@ backend/
     worker/       background jobs on PostgreSQL
   evaluation/     evaluation runner: cases, scoring, LLM judge, report
   migrations/     Alembic migrations
-  scripts/        development runner, embedded PostgreSQL, OpenAPI export, seeding, evaluation
+  scripts/        development runner, embedded PostgreSQL, OpenAPI export, seeding, evaluation, smoke check
   tests/
 frontend/
   src/
@@ -84,35 +84,37 @@ Rules built into the schema:
 
 The contract lives in `backend/app/schemas` and is exported to `docs/openapi.json`. Interactive docs: `/api/docs`.
 
-| Method and path | Purpose | Owner |
-| --- | --- | --- |
-| `GET /api/health` | Database status and provider modes | Foundation |
-| `POST /api/conversations` | Start a conversation | T3 |
-| `GET /api/conversations/{id}` | Conversation with messages | T3 |
-| `POST /api/conversations/{id}/messages` | Send a message, get the assistant's reply | T3 |
-| `POST /api/inquiries` | Create an inquiry draft | T4 |
-| `GET /api/inquiries/{id}` | Read an inquiry | T4 |
-| `PATCH /api/inquiries/{id}` | Update a draft | T4 |
-| `POST /api/inquiries/{id}/confirm` | Confirm and queue delivery | T4 |
-| `GET /api/inquiries/{id}/delivery` | Delivery status | T4 |
-| `POST /api/inquiries/{id}/delivery/retry` | Retry a failed delivery | T4 |
-| `GET /api/admin/documents` | List documents | T3 |
-| `POST /api/admin/documents` | Upload a document | T3 |
-| `GET /api/admin/documents/{id}` | Versions and indexing status | T3 |
-| `POST /api/admin/documents/{id}/versions` | Replace a document | T3 |
-| `DELETE /api/admin/documents/{id}` | Delete a document | T3 |
-| `POST /api/admin/documents/search` | Retrieval on its own: the top passages for a query, without an answer | T3 |
-| `GET /api/admin/inquiries` | Inquiries with delivery status | T4 |
+| Method and path | Purpose |
+| --- | --- |
+| `GET /api/health` | Database status and provider modes |
+| `POST /api/conversations` | Start a conversation |
+| `GET /api/conversations/{id}` | Conversation with its messages and inquiries |
+| `POST /api/conversations/{id}/messages` | Send a message, get the assistant's reply |
+| `POST /api/inquiries` | Create an inquiry draft |
+| `GET /api/inquiries/{id}` | Read an inquiry |
+| `PATCH /api/inquiries/{id}` | Update a draft |
+| `POST /api/inquiries/{id}/confirm` | Confirm and queue delivery |
+| `GET /api/inquiries/{id}/delivery` | Delivery status |
+| `POST /api/inquiries/{id}/delivery/retry` | Retry a failed delivery |
+| `GET /api/admin/documents` | List documents |
+| `POST /api/admin/documents` | Upload a document |
+| `GET /api/admin/documents/{id}` | Versions and indexing status |
+| `POST /api/admin/documents/{id}/versions` | Replace a document |
+| `DELETE /api/admin/documents/{id}` | Delete a document |
+| `POST /api/admin/documents/search` | Retrieval on its own: the top passages for a query, without an answer |
+| `GET /api/admin/inquiries` | Inquiries with delivery status |
 
 **Assistant replies.** `answer_type` tells the UI what to render:
 
 - `grounded`: an answer with `citations` (document, version, page or section, excerpt).
 - `knowledge_gap`: the documents do not answer the question; the UI offers a human handoff.
 - `clarification`: the assistant asks for more detail.
-- `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to review and confirm.
+- `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to review and confirm. When the same message also asks a question, the reply answers it first: the text starts with the answer, `citations` holds its sources, and `usage.question_answer_type` is `grounded` or `knowledge_gap`.
 - `refusal`: the message tried to override the assistant's instructions or role; the assistant declines.
 
 An assistant message also carries `usage`: provider modes and models, token counts when a live LLM reports them, response, retrieval and LLM time in milliseconds, and `retrieved`, the ranked passages the reply was built from.
+
+**Conversation.** `GET /api/conversations/{id}` returns the messages and `inquiries`: every inquiry of the conversation, oldest first, each with its current delivery. A client restores inquiry cards and human handoff requests from this list after a page reload.
 
 **Errors.** Every error has the same shape:
 
@@ -121,8 +123,6 @@ An assistant message also carries `usage`: provider modes and models, token coun
 ```
 
 Raise `ApiError` (or `NotFoundError`, `ConflictError`, `ValidationApiError`) from `app/api/errors.py`. Declare the possible errors of a route with `responses=error_responses(404, 422)`.
-
-**Stubs.** Every declared endpoint is implemented. A new endpoint that is declared before it is built raises `NotImplementedApiError` and returns `501`. The `501` is deliberately absent from OpenAPI, so implementing the endpoint does not change the contract or the generated frontend types.
 
 **Admin access.** Everything under `/api/admin` requires `Authorization: Bearer <ADMIN_API_TOKEN>`. No token: `401`. Wrong token, or no token configured on the server: `403`. There are no users or roles. `backend/tests/test_admin_auth.py` reads the admin operations from the OpenAPI schema and checks each of them, so a new admin route is covered without a new test.
 
@@ -134,11 +134,11 @@ Raise `ApiError` (or `NotFoundError`, `ConflictError`, `ValidationApiError`) fro
 
 Each provider is selected by its own setting. Model IDs, base URLs and keys come from configuration only.
 
-| Provider | Setting | Modes | Implemented by |
-| --- | --- | --- | --- |
-| LLM | `LLM_PROVIDER` | `local`, `openai_compatible` | T3 |
-| Embeddings | `EMBEDDING_PROVIDER` | `local`, `openai_compatible` | T3 |
-| CRM | `CRM_PROVIDER` | `simulated`, `hubspot` | T4 |
+| Provider | Setting | Modes |
+| --- | --- | --- |
+| LLM | `LLM_PROVIDER` | `local`, `openai_compatible` |
+| Embeddings | `EMBEDDING_PROVIDER` | `local`, `openai_compatible` |
+| CRM | `CRM_PROVIDER` | `simulated`, `hubspot` |
 
 `openai_compatible` works with any API that implements OpenAI-style chat completions and embeddings; it needs `*_BASE_URL` and `*_MODEL`, and `*_API_KEY` if the API requires one. `hubspot` needs `HUBSPOT_ACCESS_TOKEN`. Missing settings stop the application at startup.
 
@@ -150,13 +150,13 @@ The LLM and embedding providers are implemented. The `openai_compatible` classes
 
 ## Chat and inquiries
 
-The chat service (T3) never imports inquiry internals. After each visitor message it calls the seam in `app/services/inquiry_intent.py`:
+The chat service never imports inquiry internals. After each visitor message it calls the seam in `app/services/inquiry_intent.py`:
 
 ```python
 intent = await detector.assess(session, conversation_id=..., turns=[...])
 ```
 
-`InquiryIntent` says whether the visitor wants to buy, which fields are already extracted, which required fields are missing, and which draft the inquiry module saved. The detector may write through the chat's session but must not commit, so the draft and the reply are stored together.
+`InquiryIntent` says whether the visitor wants to buy, which fields are already extracted, which required fields are missing, which draft the inquiry module saved, and `question`: the part of the message that asks something else, if there is one. The detector may write through the chat's session but must not commit, so the draft and the reply are stored together.
 
 The detector comes from `app/services/inquiries/intent.py`; routes receive it as `InquiryIntentDetectorDep`. It keeps one purchase draft per conversation up to date and never confirms it. `NoOpInquiryIntentDetector` in the seam module reports no intent and is there for tests.
 
@@ -197,7 +197,7 @@ Retrieval is available without an answer in two ways:
 `app/services/chat/service.py` handles one visitor message in this order and commits the message and the reply together:
 
 1. **Override guard** (`guard.py`). A message that tries to override the instructions, extract the prompt, change the role, dictate the reply or change the knowledge base gets a fixed `refusal`. Nothing is searched and no LLM is called. A refused message is left out of the context of later messages.
-2. **Inquiry seam.** The detector described in [Chat and inquiries](#chat-and-inquiries) is asked next. Detected intent gives an `inquiry_offer`.
+2. **Inquiry seam.** The detector described in [Chat and inquiries](#chat-and-inquiries) is asked next. Detected intent gives an `inquiry_offer`. If the message also asks a question ("I want 12 LP-420 printers, what is the warranty?"), steps 3 to 5 run for that question first and the reply is the answer followed by the offer. A grounded answer brings its citations. A knowledge gap is admitted in one sentence, and the visitor is told to add the question to the notes of the inquiry; no second handoff is offered. Any other outcome leaves the plain offer, and `usage.note` records it. The reply stays an `inquiry_offer`; `usage.question_answer_type` records how the question was answered. The rules split a message into a request and a question only when the request names a quantity and a product, so a policy question that mentions buying does not open an inquiry.
 3. **Retrieval.** The message is embedded and searched. Earlier visitor messages (the last two) are added to the query with a lower weight, or with the same weight when the new message is too short to stand alone ("And for the P-240?").
 4. **Document instructions are data.** Before a passage is quoted or sent to an LLM, blocks that address the assistant or try to override instructions are removed (`strip_embedded_instructions`), and a section whose heading does so is dropped whole. The LLM prompt repeats the rule.
 5. **Answer.**
@@ -238,17 +238,17 @@ await session.commit()
 - **Transactions.** A handler gets `JobContext` with a session. Its writes are committed together with the job's success and rolled back on failure. To keep a record of a failed attempt, commit before raising.
 - **Handlers must be idempotent.** A job can run more than once.
 
-Handlers register in `app/worker/handlers/indexing.py` (T3) and `app/worker/handlers/delivery.py` (T4). Job type names are in `app/worker/job_types.py`.
+Handlers register in `app/worker/handlers/indexing.py` and `app/worker/handlers/delivery.py`. Job type names are in `app/worker/job_types.py`.
 
 ## Frontend
 
-Routes: `/` (visitor chat) and `/admin`. The UI talks to the backend only through the typed client; it has no other source of data.
+Routes: `/` (visitor chat) and `/admin`. The UI talks to the backend only through the typed client; it has no other source of data. The admin page is a separate chunk that loads when `/admin` is opened (`src/pages/AdminRoute.tsx`). The main chunk is still about 710 kB (220 kB gzipped), above Vite's 500 kB warning: it holds React, the router, the UI kit primitives and the Markdown renderer, which the chat needs on first paint. Splitting it further would mean loading the Markdown renderer or the vendor code separately; that is not done.
 
 - `src/api/client.ts` exports `api` (visitor endpoints), `createAdminApi(token)`, and `unwrap`, which returns data or throws an `ApiError` in the common format. `src/api/schema.d.ts` is generated; never edit it by hand.
 - `src/t3code/` is the UI kit: theme tokens, controls, the app shell, the timeline, the composer and the right panel, copied or adapted from T3 Code (MIT). Its [README](../frontend/src/t3code/README.md) lists every file, its source and the changes. The rest of the code imports it through the `~` alias. The interface carries no T3 Code branding.
 - `src/app/` is the page frame: the sidebar with the demo status, the header with the mode badge, and the health banner. `HealthProvider` (`src/hooks/useHealth.tsx`) loads `/api/health`; the badge and the banner read it. The badge sits in a header of fixed height and the banner overlays a reserved spacer, so neither moves the content.
-- `src/features/chat/` holds the conversation state (`useChat`: history restore, sending, retry after a failed send) and the sources list. A reply is rendered by `answer_type`: `grounded` shows the text and its citations (document, version, page or section, excerpt; the retrieval score is not shown); `knowledge_gap` offers a human handoff; `inquiry_offer` opens the inquiry form filled from `message.inquiry`; every other type, including an unknown one, is a plain message. `MessageRead.usage` is never shown to the visitor.
-- `src/features/inquiry/` holds the inquiry flow (`useInquiryFlow`): form, validation by the contract and `missing_fields`, preview, explicit confirmation, delivery status with polling, and a manual retry after a failure. A handoff uses `kind: "handoff"` and asks only for the question and the contact. The visitor sees a plain delivery status; the technical `last_error` and the attempt log appear only in the admin.
+- `src/features/chat/` holds the conversation state (`useChat`: history restore, sending, retry after a failed send) and the sources list. A reply is rendered by `answer_type`: `grounded` shows the text and its citations (document, version, page or section, excerpt; the retrieval score is not shown); `knowledge_gap` offers a human handoff; `inquiry_offer` opens the inquiry form filled from `message.inquiry`, and shows citations when the reply answered a question first; every other type, including an unknown one, is a plain message. `MessageRead.usage` is never shown to the visitor.
+- `src/features/inquiry/` holds the inquiry flow (`useInquiryFlow`): form, validation by the contract and `missing_fields`, preview, explicit confirmation, delivery status with polling, and a manual retry after a failure. A handoff uses `kind: "handoff"` and asks only for the question and the contact. After a reload, `restoredHandoffs.ts` attaches each handoff request in `conversation.inquiries` to the knowledge gap reply it followed, so its card and delivery status come back; purchase drafts come back through `message.inquiry`. The visitor sees a plain delivery status; the technical `last_error` and the attempt log appear only in the admin.
 - `src/features/admin/` holds the admin session (the token lives in memory only, never in browser storage), documents (upload, replace, delete, versions, indexing status with polling) and inquiries (delivery status, failure reason, attempt log).
 - `src/lib/errors.ts` maps transport failures and API errors to the messages the UI shows. `src/lib/timing.ts` holds the polling intervals.
 - The single theme is light. The font stack is system fonts, so no font files are shipped.
@@ -261,31 +261,12 @@ Scenario flags come from the page address and stay for the browser tab: `?mock=d
 
 The component and scenario tests (`pnpm --dir frontend test`) run the same handlers in Node.
 
-## Ownership
+## Change rules
 
-Three tasks build on the foundation in parallel. Each module has one owner.
-
-| Area | T3: knowledge base and chat | T4: inquiries and CRM | T5: frontend |
-| --- | --- | --- | --- |
-| Routes | `api/routes/conversations.py`, `api/routes/admin_documents.py` | `api/routes/inquiries.py`, `api/routes/admin_inquiries.py` | |
-| Services | `services/chat/`, `services/documents/` | `services/inquiries/` (including `intent.py`) | |
-| Providers | `providers/llm/local.py`, `providers/llm/openai_compatible.py`, `providers/embeddings/local.py`, `providers/embeddings/openai_compatible.py` | `providers/crm/simulated.py`, `providers/crm/hubspot.py` | |
-| Jobs | `worker/handlers/indexing.py` | `worker/handlers/delivery.py` | |
-| Tests | new test files for the modules above | new test files for the modules above | |
-| Frontend | | | everything under `frontend/src` except `api/schema.d.ts` |
-
-**Shared files** change only additively (new fields, new values, new functions; no renames or removals), and every such change is listed in the task report:
-
-- `backend/app/schemas/`, `backend/app/models/`, `backend/migrations/`
-- `backend/app/core/` (settings), `backend/app/api/deps.py`, `backend/app/api/errors.py`, `backend/app/api/router.py`, `backend/app/main.py`
-- provider interfaces (`providers/*/base.py`, `providers/factory.py`, `providers/errors.py`)
-- `backend/app/services/inquiry_intent.py`, `backend/app/worker/` outside `handlers/indexing.py` and `handlers/delivery.py`
-- `backend/tests/conftest.py`, `backend/tests/api_cases.py`
-- `.env.example`, `Makefile`, `docker-compose.yml`, `backend/pyproject.toml`, `frontend/package.json`
-
-**Generated files** (`docs/openapi.json`, `frontend/src/api/schema.d.ts`, `backend/uv.lock`, `frontend/pnpm-lock.yaml`) are never merged by hand. On a conflict, take either side and regenerate: `make openapi`, `uv lock`, `pnpm install`.
-
-**Migrations.** The initial migration is meant to cover T3 and T4. If a task still needs a schema change, it adds one migration on top of the current head and says so in its report. `test_migrations_have_a_single_head` fails when two tasks add migrations in parallel; rebase one on the other.
+- **The API contract changes additively**: new fields, new values, new endpoints; no renames or removals. After a change to `backend/app/schemas` or to a route, run `make openapi`. `make check` fails when the generated frontend types do not match `docs/openapi.json`, and a backend test fails when `docs/openapi.json` does not match the application.
+- **Generated files** (`docs/openapi.json`, `frontend/src/api/schema.d.ts`, `backend/uv.lock`, `frontend/pnpm-lock.yaml`) are never edited or merged by hand. On a conflict, take either side and regenerate: `make openapi`, `uv lock`, `pnpm install`.
+- **Migrations.** A schema change is one new migration on top of the current head. `test_migrations_have_a_single_head` fails when there are two heads.
+- **Module boundaries.** The chat reaches inquiries only through `app/services/inquiry_intent.py`. Services use providers only through the interfaces in `app/providers/*/base.py`. The frontend imports the UI kit through the `~` alias and changes it only as its [README](../frontend/src/t3code/README.md) describes.
 
 ## Development
 
@@ -297,6 +278,7 @@ make openapi  # regenerate docs/openapi.json and frontend/src/api/schema.d.ts
 make migrate  # apply migrations
 make seed     # load the Northline knowledge base (idempotent)
 make eval     # run the evaluation cases on an isolated database and write a report
+make smoke    # walk the demo scenario over HTTP on an isolated database (local and simulated modes)
 make db       # run only the embedded PostgreSQL and print its DATABASE_URL
 ```
 
@@ -306,9 +288,12 @@ Without `DATABASE_URL`, `make dev` and the tests start an embedded PostgreSQL wi
 
 Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 
-## Known limits of the foundation
+`make smoke` (`backend/scripts/smoke.py`) starts an embedded PostgreSQL in a temporary directory, loads the Northline knowledge base, starts the API and the worker as separate processes and checks the demo scenario through the HTTP API: a cited answer, a knowledge gap, a human handoff, a purchase request that also asks a question, confirmation, delivery, delivery errors with automatic and manual retries, the restored conversation and admin access. It always runs in the local and simulated modes and exits with code 1 on the first difference.
 
-- The Docker Compose setup was written without a Docker host and has not been run yet.
+## Known limits
+
+- The Docker Compose setup was written without a Docker host and has not been run.
+- The `openai_compatible` LLM and embedding providers have not been run against a live API. The evaluation has been run in the local modes only.
 - FastAPI reads a request body before it checks the admin token. The document upload routes are protected by `app/api/upload_guard.py`, which checks the token and `MAX_UPLOAD_BYTES` before the body is read. Other admin routes take small JSON bodies; the nginx configuration caps the body size for them.
 - A human handoff is an inquiry with `kind: "handoff"`: the UI creates it after a knowledge gap, the visitor confirms it, and it is delivered to the CRM like a purchase inquiry. Nobody is notified by email.
 - The HubSpot integration has not been verified on a live account; see [inquiries.md](inquiries.md).

@@ -3,6 +3,8 @@ AGENTS.md
 CLAUDE.md
 CLAUDE.local.md
 PLAN.md
+.claude/
+.codex/
 
 # Secrets and local environment
 .env

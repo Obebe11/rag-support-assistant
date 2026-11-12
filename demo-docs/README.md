@@ -6,6 +6,6 @@ This is a ready **alternative corpus for a business software AI support demo**. 
 
 [odoo-replacement-test/](odoo-replacement-test/README.md) holds two older Odoo 18 versions of corpus articles. They are excluded from retrieval and used only to test document replacement.
 
-Articles are stored in their original `.rst` text format, without screenshots. No application or document ingestion pipeline has been created.
+Articles are stored in their original `.rst` text format, without screenshots. The application does not load this corpus: `make seed` loads the Northline knowledge base, and the ingestion pipeline reads Markdown and PDF, not `.rst`.
 
-[DEMO-QUESTIONS.md](DEMO-QUESTIONS.md) contains sample questions for the future demo. These are proposed checks, not evaluation results from a working RAG system.
+[DEMO-QUESTIONS.md](DEMO-QUESTIONS.md) contains sample questions for this corpus. These are proposed checks, not evaluation results: the evaluation in [`evals/`](../evals/README.md) runs on the Northline knowledge base only.

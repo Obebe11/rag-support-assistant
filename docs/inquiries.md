@@ -121,7 +121,7 @@ Limits of that check:
 - If someone in HubSpot edits the note and removes the reference line, or removes the note's association with the contact, a later retry of the same delivery does not find it. After a delivery is recorded as delivered, nothing is sent again, so this matters only between a lost response and its retry.
 - If HubSpot merges or deletes the contact between attempts, the earlier note is not found.
 
-A stronger guarantee needs a change in the HubSpot account: a custom property with unique values that holds the reference, and a key that can manage properties. That is not built, because the task was to work without mandatory custom properties.
+A stronger guarantee needs a change in the HubSpot account: a custom property with unique values that holds the reference, and a key that can manage properties. That is not built: the integration is designed to work on a HubSpot account without any custom property.
 
 ### API version
 

@@ -1,13 +1,13 @@
 # Acceptance checks outside the 40 cases
 
-The plan asks for separate checks of document replacement and deletion, inquiry confirmation, HubSpot failure handling, retries without duplicates and blocked visitor access to administrative actions. The 40 evaluation cases do not cover these. Automated tests do, and this file maps each check to the tests that prove it.
+The project requires separate checks of document replacement and deletion, inquiry confirmation, HubSpot failure handling, retries without duplicates and blocked visitor access to administrative actions. The 40 evaluation cases do not cover these. Automated tests do, and this file maps each check to the tests that prove it.
 
 All paths are relative to `backend/tests/`. Run them with `make check`, or with `cd backend && uv run pytest`.
 
 ## What these tests prove and what they do not
 
 - Every test runs the real API, worker, queue and handlers on PostgreSQL. Nothing in the tested path is mocked except the outside services.
-- **HubSpot was never called.** The HubSpot tests run the real provider against an in-memory fake of the HubSpot API that follows the documented request and response shapes. A live account may behave differently. No HubSpot key was available for this task.
+- **HubSpot was never called.** The HubSpot tests run the real provider against an in-memory fake of the HubSpot API that follows the documented request and response shapes. A live account may behave differently. No HubSpot key was available.
 - The chat in these tests runs in the local demo mode (no LLM).
 - "Worker dies" means the handler is stopped by an exception that skips all cleanup, and the lease is then expired by hand. No operating system process is killed.
 

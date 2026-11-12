@@ -140,10 +140,10 @@ Every metric is counted over the turns or items it applies to, and reported over
 
 | Metric | What is counted |
 | --- | --- |
-| Response type | The reply's `answer_type` equals the expected `response_type`. An `inquiry_offer` reply matches none of them. |
+| Response type | The reply's `answer_type` equals the expected `response_type`. An `inquiry_offer` reply matches none of them, with one exception: a reply to a purchase request that also asks a question answers the question first and then offers the inquiry. It is scored by that answer (`usage.question_answer_type`: `grounded` or `knowledge_gap`), and `results.json` records it as `answered_as` next to the `answer_type`. |
 | Human handoff offered | For turns with `offer_handoff`: the reply text names a person or team and offers to involve them. This is a pattern check on the text. |
 | Expected source in top 5: search for the message alone | `POST /api/admin/documents/search` with the visitor message as the query and `top_k` 5. |
-| Expected source in top 5: retrieval behind the reply | The first five of `usage.retrieved`, the passages the reply was built from. For a follow-up this search also uses the earlier visitor messages, so it can differ from the search above. A reply that searched nothing (a refusal, an inquiry offer) counts as a miss. |
+| Expected source in top 5: retrieval behind the reply | The first five of `usage.retrieved`, the passages the reply was built from. For a follow-up this search also uses the earlier visitor messages, so it can differ from the search above. A reply that searched nothing (a refusal, an inquiry offer without a question) counts as a miss. |
 | Reply cites an expected source | At least one citation of the reply matches an expected source. |
 | `must_include` items matched | At least one `match_any` string of the item occurs in the reply. |
 | Matched items also found in a cited excerpt | For matched items: the same string also occurs in the excerpt of a citation. Together with the previous two rows this is the automated part of "source support for the main claims": the reply states the fact, cites the expected passage, and the cited text contains the fact. |
