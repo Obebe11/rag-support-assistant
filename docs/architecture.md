@@ -2,7 +2,7 @@
 
 Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes how the system is built: the repository layout, the data model, the API contract, the provider modes, the chat and inquiry logic, background jobs, the frontend and the development commands.
 
-Status: everything described here is implemented and covered by automated tests in the local and simulated modes. What has not been run (a live LLM, a live embedding API, a live HubSpot account, Docker Compose) is listed in [Known limits](#known-limits). Inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
+Status: everything described here is implemented and covered by automated tests in the local and simulated modes. The chat has also been evaluated once with a live LLM and a live embedding API ([report](../evals/reports/live-glm-5.3-flash/report.md)). What has not been run (a live HubSpot account, Docker Compose) is listed in [Known limits](#known-limits). Inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
 
 ## Repository layout
 
@@ -146,7 +146,7 @@ Each provider is selected by its own setting. Model IDs, base URLs and keys come
 
 Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag.
 
-The LLM and embedding providers are implemented. The `openai_compatible` classes share the HTTP client in `app/providers/openai_http.py`: timeouts, connection errors and the statuses 408, 409, 425, 429 and 5xx are retryable `ProviderError`s, other statuses and malformed replies are not. They are tested against a mock transport only and have not been run against a live API. [Knowledge base and chat](#knowledge-base-and-chat) describes the local modes.
+The LLM and embedding providers are implemented. The `openai_compatible` classes share the HTTP client in `app/providers/openai_http.py`: timeouts, connection errors and the statuses 408, 409, 425, 429 and 5xx are retryable `ProviderError`s, other statuses and malformed replies are not. They are tested against a mock transport, and the evaluation has been run once against a live API through OpenRouter ([report](../evals/reports/live-glm-5.3-flash/report.md)). [Knowledge base and chat](#knowledge-base-and-chat) describes the local modes.
 
 ## Chat and inquiries
 
@@ -296,7 +296,7 @@ Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 ## Known limits
 
 - The Docker Compose setup was written without a Docker host and has not been run.
-- The `openai_compatible` LLM and embedding providers have not been run against a live API. The evaluation has been run in the local modes only.
+- The `openai_compatible` LLM and embedding providers have been run against one live API (OpenRouter) with one LLM and one embedding model, in one evaluation run. Other providers and models have not been tried.
 - FastAPI reads a request body before it checks the admin token. The document upload routes are protected by `app/api/upload_guard.py`, which checks the token and `MAX_UPLOAD_BYTES` before the body is read. Other admin routes take small JSON bodies; the nginx configuration caps the body size for them.
 - A human handoff is an inquiry with `kind: "handoff"`: the UI creates it after a knowledge gap, the visitor confirms it, and it is delivered to the CRM like a purchase inquiry. Nobody is notified by email.
 - The HubSpot integration has not been verified on a live account; see [inquiries.md](inquiries.md).
