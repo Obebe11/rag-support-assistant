@@ -13,6 +13,13 @@ It is for people who evaluate or build this kind of assistant: the repository sh
 5. The confirmed inquiry is delivered to the CRM by a background worker. A temporary error is retried automatically; a failed delivery can be sent again. Confirming twice or retrying does not start a second delivery.
 6. An administrator signs in with a token, uploads, replaces and deletes documents, and sees every inquiry with its delivery log. After a replacement, answers come from the new version only; a deleted document is no longer cited.
 
+## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/rag-pipeline-dark.svg">
+  <img alt="Indexing: upload, split into passages, embed, store the active version in PostgreSQL with pgvector. Answering: check the message, find passages, write the reply from them, verify citations. Outcomes: a grounded answer with sources, a knowledge gap with a human handoff, or a purchase inquiry sent to the CRM after confirmation." src="docs/images/rag-pipeline-light.svg" width="960">
+</picture>
+
 ## Status
 
 Version 1. The scenario above works end to end in the demo modes and is covered by automated tests, a smoke check over HTTP and an evaluation run.
