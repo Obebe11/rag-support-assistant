@@ -1,6 +1,8 @@
 # Handoff AI
 
-An open-source demo of a support assistant for a company website. It answers visitor questions from the company's documents and shows the passages it used. When the documents have no answer, it says so and offers to pass the question to a person. When a visitor wants to buy, it collects a purchase inquiry, shows it for confirmation and delivers it to a CRM.
+An open-source support assistant for company websites: it answers from your documents with citations, passes unanswered questions to a person, and delivers confirmed purchase inquiries to a CRM.
+
+This repository is a working demo. The assistant answers visitor questions from the company's documents and shows the passages it used. When the documents have no answer, it says so and offers to pass the question to a person. When a visitor wants to buy, it collects a purchase inquiry, shows it for confirmation and delivers it to a CRM.
 
 It is for people who evaluate or build this kind of assistant: the repository shows the whole path from a document upload to a CRM record, with the limits stated. The demo company, Northline Office Equipment, is fictional.
 
@@ -10,7 +12,7 @@ It is for people who evaluate or build this kind of assistant: the repository sh
 2. A follow-up question ("And for the P-240?") is answered in the context of the conversation.
 3. A question the documents do not answer gets no guess. The assistant admits the gap and offers a human handoff: the visitor reviews the question and the contact details, confirms, and follows the delivery status.
 4. A purchase request ("I want 12 LP-420 printers") opens an inquiry form filled from the conversation. If the same message asks a question, the reply answers it first. Nothing is sent until the visitor confirms the preview.
-5. The confirmed inquiry is delivered to the CRM by a background worker. A temporary error is retried automatically; a failed delivery can be sent again. Confirming twice or retrying does not start a second delivery.
+5. The confirmed inquiry is delivered to the CRM by a background worker. A temporary error is retried automatically; a failed delivery can be sent again. Confirming twice or retrying does not create a second CRM record. With HubSpot, a second note is possible in rare cases; see [Limitations](#limitations).
 6. An administrator signs in with a token, uploads, replaces and deletes documents, and sees every inquiry with its delivery log. After a replacement, answers come from the new version only; a deleted document is no longer cited.
 
 ## How it works
@@ -126,7 +128,7 @@ The stack was written on a machine without Docker. The Compose file is validated
 
 - **Backend:** FastAPI, async SQLAlchemy, PostgreSQL with pgvector. One API process and one worker process; the job queue is a table, so there is no Redis or workflow engine.
 - **Knowledge base:** an upload becomes a document version, is split into passages by headings and pages, embedded and searched by exact cosine distance. Only the active version of a document is searched. Citations are stored with the reply, so the sources of an old answer stay readable.
-- **Chat:** each message passes an override guard, the purchase intent detector, retrieval and the answer step. A grounded reply must cite a passage that was really retrieved; otherwise it becomes a knowledge gap.
+- **Chat:** each message passes an override guard, the purchase intent detector, retrieval and the answer step. With a live LLM, a grounded reply must cite a passage that was really retrieved; otherwise it becomes a knowledge gap. The local mode builds a grounded reply from quotes of the retrieved passages, so it always cites them.
 - **Inquiries:** a draft is confirmed by the visitor and delivered by a job with an idempotency key, retries with backoff and a log of attempts.
 - **Providers:** the LLM, the embeddings and the CRM sit behind interfaces, each with a demo mode and a live mode selected by configuration.
 - **Frontend:** React, TypeScript and Vite. API types are generated from the OpenAPI contract.

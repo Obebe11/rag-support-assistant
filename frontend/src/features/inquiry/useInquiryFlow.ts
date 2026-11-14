@@ -81,26 +81,26 @@ export function useInquiryFlow(options: InquiryFlowOptions): InquiryFlow {
 
   useEffect(() => {
     if (!polling || inquiryId === null) return;
-    let cancelled = false;
+    let canceled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
       try {
         const next = await unwrap(
           api.GET("/api/inquiries/{inquiry_id}/delivery", { params: { path: { inquiry_id: inquiryId } } }),
         );
-        if (cancelled) return;
+        if (canceled) return;
         setStatusStale(false);
         setDelivery(next);
         if (isActive(next)) timer = setTimeout(tick, pollIntervalMs);
       } catch {
-        if (cancelled) return;
+        if (canceled) return;
         setStatusStale(true);
         timer = setTimeout(tick, pollIntervalMs);
       }
     };
     timer = setTimeout(tick, pollIntervalMs);
     return () => {
-      cancelled = true;
+      canceled = true;
       clearTimeout(timer);
     };
   }, [polling, inquiryId, pollIntervalMs]);

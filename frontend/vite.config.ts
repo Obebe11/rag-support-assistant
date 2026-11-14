@@ -30,6 +30,21 @@ export default defineConfig(({ mode }) => {
         "/api": `http://127.0.0.1:${backendPort}`,
       },
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          // The React runtime and the other dependencies change less often than the app,
+          // so they get chunks of their own that stay cached across releases. The admin
+          // page is split off separately, by its lazy import in `src/pages/AdminRoute.tsx`.
+          codeSplitting: {
+            groups: [
+              { name: "react", test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/ },
+              { name: "vendor", test: /node_modules[\\/]/ },
+            ],
+          },
+        },
+      },
+    },
     preview: {
       port: frontendPort,
       strictPort: true,
