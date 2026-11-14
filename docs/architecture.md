@@ -38,6 +38,7 @@ docs/
   openapi.json    the API contract, exported from the backend
 knowledge-base/   demo document corpus
 evals/            evaluation cases, injection fixtures and reports
+.github/workflows/ CI: the checks, the smoke scenario and the Docker Compose stack
 docker-compose.yml, Makefile, .env.example
 ```
 
@@ -295,7 +296,7 @@ Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 
 ## Known limits
 
-- The Docker Compose setup was written without a Docker host and has not been run.
+- The Docker Compose setup was written without a Docker host and has not been run by hand. The CI workflow (`.github/workflows/ci.yml`) builds the images and starts the stack.
 - The `openai_compatible` LLM and embedding providers have not been run against a live API. The evaluation has been run in the local modes only.
 - FastAPI reads a request body before it checks the admin token. The document upload routes are protected by `app/api/upload_guard.py`, which checks the token and `MAX_UPLOAD_BYTES` before the body is read. Other admin routes take small JSON bodies; the nginx configuration caps the body size for them.
 - A human handoff is an inquiry with `kind: "handoff"`: the UI creates it after a knowledge gap, the visitor confirms it, and it is delivered to the CRM like a purchase inquiry. Nobody is notified by email.

@@ -1,17 +1,20 @@
 # Local stack: PostgreSQL with pgvector, migrations, API, worker and frontend.
-# Usage: cp .env.example .env && docker compose up --build
+# Usage, from the repository root:
+#   sed "s/^ADMIN_API_TOKEN=$/ADMIN_API_TOKEN=$(openssl rand -hex 32)/" .env.example > .env
+#   docker compose up --build
 # Load the demo knowledge base once: docker compose run --rm seed
 name: handoff-ai
 
+# One backend image, built by the `backend` service and reused by the others.
 x-backend: &backend
-  build:
-    context: .
-    dockerfile: backend/Dockerfile
+  image: handoff-ai-backend:local
   env_file:
     - path: .env
       required: false
   environment:
     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-handoff}:${POSTGRES_PASSWORD:-handoff}@db:5432/${POSTGRES_DB:-handoff}
+    # Without a token every admin request is rejected, so the stack refuses to start instead.
+    ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?set it in .env; generate one with `openssl rand -hex 32`}
 
 services:
   db:
@@ -37,6 +40,9 @@ services:
 
   backend:
     <<: *backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -73,7 +79,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-5173}:8080"
 
