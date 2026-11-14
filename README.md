@@ -24,7 +24,7 @@ It is for people who evaluate or build this kind of assistant: the repository sh
 
 ## Status
 
-Version 1. The scenario above works end to end in the demo modes and is covered by automated tests, a smoke check over HTTP and an evaluation run.
+Version 1. The scenario above works end to end in the demo modes and is covered by automated tests, a smoke check over HTTP and evaluation runs in the local modes and with a live LLM.
 
 | Part | State |
 | --- | --- |
@@ -69,7 +69,7 @@ make configure  # choose the LLM, embeddings and CRM, enter the keys and check t
 make seed       # load the demo documents again, for example after editing them
 make check      # linters, type checks, tests and the frontend build
 make smoke      # the scenario above over HTTP, on an isolated database, in the demo modes
-make eval       # the 40 evaluation cases on an isolated database
+make eval       # the 40 evaluation cases on an isolated database, with the providers in .env
 make openapi    # regenerate docs/openapi.json and the frontend API types
 ```
 
@@ -143,13 +143,15 @@ Every setting has a default that runs the demo, and every setting is listed with
 
 `make eval` runs 40 evaluation cases on an isolated database and writes a report and a machine-readable results file to `evals/reports/latest/`. The cases cover answerable questions, questions the knowledge base cannot answer, multi-turn conversations and attempts to override instructions.
 
-The run with a live LLM and live embeddings is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md): `z-ai/glm-5.3-flash` wrote the replies and `amazon/titan-embed-text-v2` ran the search, both through OpenRouter. 15 of 40 cases passed the automated first pass, 3 failed and 22 needed review; after the review of the open checks, 37 passed and 3 failed. 48 of 50 replies had the expected response type, 63 of 68 required facts were found, and the expected source was in the top five search results for 29 of 33 turns. The notes in the report explain the three failures and what the LLM judge found.
+`make eval` uses the LLM and embedding providers set in `.env`. After `make configure` with a live API, it calls that API and the run costs money; to run it in the demo modes, prefix it with `LLM_PROVIDER=local EMBEDDING_PROVIDER=local`. A run in the local modes measures retrieval by shared words and the rules that assemble a reply from quotes, not the quality of an LLM. The exit code 0 means that the run completed, not that the cases passed: read the report.
 
-The baseline run is in [`evals/reports/local-baseline/`](evals/reports/local-baseline/report.md). It was made in the local demo modes, with no language model and no embedding model: 8 of 40 cases passed the automated first pass, 20 failed and 12 needed review; after the review of the open checks, 20 passed and 20 failed. The expected source was in the top five results for 21 of 33 turns. The report explains each failure.
+The run with a live LLM and live embeddings is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md): `z-ai/glm-5.3-flash` wrote the replies and `amazon/titan-embed-text-v2` ran the search, both through OpenRouter, on commit `4b91419`. The application code under `backend/app/` is the same in this release. 15 of 40 cases passed the automated first pass, 3 failed and 22 needed review; after the review of the open checks, 37 passed and 3 failed. 48 of 50 replies had the expected response type, 63 of 68 required facts were found, and the expected source was in the top five search results for 29 of 33 turns. The notes in the report explain the three failures and what the LLM judge found.
 
-In both runs the open checks were reviewed by an AI coding agent, not by a person; each `manual-review.json` names the reviewer and the method.
+The current run in the local demo modes is [`evals/reports/local-release/`](evals/reports/local-release/report.md), made on commit `32d8256` of this release with no language model and no embedding model: 8 of 40 cases passed the automated first pass, 20 failed and 12 needed review; after the review of the open checks, 20 passed and 20 failed. 31 of 50 replies had the expected response type, 20 of 68 required facts were found, and the expected source was in the top five results for 21 of 33 turns. Half of the cases fail because the local mode quotes and cannot paraphrase; the [baseline report](evals/reports/local-baseline/report.md) explains each failure.
 
-One change after the baseline touches replies: a purchase request that also asks a question is now answered before the inquiry is offered. The run after it, [`evals/reports/local-after-integration/`](evals/reports/local-after-integration/report.md), differs in one reply of 50, and its case totals are the same as the baseline's.
+The open checks of every kept run were reviewed by an AI coding agent, not by an independent person; each `manual-review.json` names the reviewer and the method. In the baseline and the live run the agent read every open check; the later local runs carry over the verdicts of the earlier review for every reply that did not change.
+
+Earlier local runs are kept for comparison: [`local-baseline/`](evals/reports/local-baseline/report.md), before any change prompted by the evaluation, and [`local-after-integration/`](evals/reports/local-after-integration/report.md), after a purchase request that also asks a question started to get an answer first. [`evals/reports/README.md`](evals/reports/README.md) compares them.
 
 These numbers describe this system on these questions and this demo corpus. They are not a guarantee for other documents.
 

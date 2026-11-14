@@ -6,6 +6,7 @@ Each folder here is one run of the [evaluation cases](../README.md) that was kep
 | --- | --- | --- |
 | [`local-baseline/`](local-baseline/report.md) | LLM `local`, embeddings `local` (no API calls) | The system before any fix prompted by the evaluation. Includes a review of every open check by an AI coding agent. |
 | [`local-after-integration/`](local-after-integration/report.md) | LLM `local`, embeddings `local` (no API calls) | The same cases after the chat learned to answer a question inside a purchase request before it offers the inquiry. One reply of 50 changed; the notes in the report compare the two runs. |
+| [`local-release/`](local-release/report.md) | LLM `local`, embeddings `local` (no API calls) | The current run in the local modes, on the release code (commit `32d8256`, clean working tree). Same verdict digest as `local-after-integration`; the review verdicts were carried over by an AI coding agent. |
 | [`live-glm-5.3-flash/`](live-glm-5.3-flash/report.md) | LLM `z-ai/glm-5.3-flash`, embeddings `amazon/titan-embed-text-v2` (live, through OpenRouter), LLM judge on | The first run with a live LLM and live embeddings, after clarifying questions and knowledge gaps started to cite the facts they name. Includes a review of every open check by an AI coding agent. |
 
 ## Changes after the baseline
@@ -17,13 +18,13 @@ One product change after the baseline touches replies. The baseline notes descri
 | | `local-baseline` | `local-after-integration` |
 | --- | --- | --- |
 | Cases after the automated first pass | 8 pass, 20 fail, 12 need review | 8 pass, 20 fail, 12 need review |
-| Cases after the manual review | 20 pass, 20 fail | 20 pass, 20 fail |
+| Cases after the review by an AI coding agent | 20 pass, 20 fail | 20 pass, 20 fail |
 | Response type as expected | 30 of 50 turns | 31 of 50 turns |
 | Expected source in the top five | 21 of 33 turns | 21 of 33 turns |
 | Required facts found | 18 of 68 | 20 of 68 |
 | Verdict digest | `5219ab9f…` | `3a248a3f…` |
 
-Only the reply of ans-16 differs. The case still fails: the reply now quotes and cites the free-freight rule, but not the discount. The headline numbers of the baseline therefore still describe the current system in the local modes.
+Only the reply of ans-16 differs. The case still fails: the reply now quotes and cites the free-freight rule, but not the discount. The case totals of the baseline therefore still describe the current system in the local modes; [`local-release/`](local-release/report.md) confirms it on the release code.
 
 ## Live run
 
@@ -32,12 +33,12 @@ Only the reply of ans-16 differs. The case still fails: the reply now quotes and
 | | `local-baseline` | `live-glm-5.3-flash` |
 | --- | --- | --- |
 | Cases after the automated first pass | 8 pass, 20 fail, 12 need review | 15 pass, 3 fail, 22 need review |
-| Cases after the review of open checks | 20 pass, 20 fail | 37 pass, 3 fail |
+| Cases after the review by an AI coding agent | 20 pass, 20 fail | 37 pass, 3 fail |
 | Response type as expected | 30 of 50 turns | 48 of 50 turns |
 | Expected source in the top five | 21 of 33 turns | 29 of 33 turns |
 | Required facts found | 18 of 68 | 63 of 68 |
 
-The reviews of both runs were made by an AI coding agent, not by a person. The notes in the live report explain the three failed cases and the LLM judge's verdicts.
+The reviews of both runs were made by an AI coding agent, not by an independent person. The notes in the live report explain the three failed cases and the LLM judge's verdicts.
 
 ## Checks outside the 40 cases
 
@@ -55,7 +56,7 @@ These results describe this system on 40 questions about one demo corpus. They a
 | --- | --- | --- |
 | `results.json` | the runner | Every reply, citation, retrieved passage, check and total of the run. |
 | `report.md` | the runner | The same run for a reader. Rebuilt by `--render-only`. |
-| `manual-review.json` | a reviewer | Verdicts on the checks a substring match cannot settle. The report shows them under "After manual review", apart from the measured numbers. |
+| `manual-review.json` | a reviewer; in every kept run, an AI coding agent | Verdicts on the checks a substring match cannot settle. The report shows them under "After manual review", apart from the measured numbers. |
 | `notes.md` | a reviewer | Analysis of the run. The report includes it under "Notes". |
 
-To check that the current code still reproduces a kept run in the local modes, run `make eval` and compare `run.verdict_digest` in `latest/results.json` with the digest in the kept `results.json`. The current code reproduces `local-after-integration`.
+To check that the current code still reproduces a kept run in the local modes, run `make eval` and compare `run.verdict_digest` in `latest/results.json` with the digest in the kept `results.json`. The release code reproduces `local-release`, which has the same digest as `local-after-integration`.

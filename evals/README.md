@@ -102,7 +102,7 @@ make setup   # once: install the backend and frontend dependencies
 make eval    # run all 40 cases and write evals/reports/latest/
 ```
 
-`make eval` needs no API key, no Docker and no running application. It:
+With the demo settings, `make eval` needs no API key. It needs no Docker and no running application either. It:
 
 1. validates the case files (`validate_cases.py`) and stops if they are not valid;
 2. starts an embedded PostgreSQL in a temporary directory;
@@ -121,7 +121,9 @@ Options go through `EVAL_ARGS`, or straight to the script (`cd backend && uv run
 
 Set `EVAL_DATABASE_URL` (`postgresql+asyncpg://...`) to use an existing PostgreSQL server with pgvector instead of the embedded one. The role must be allowed to create and drop databases; the run creates databases named `handoff_eval_<random>` and drops them when it ends.
 
-The provider modes, models and prices come from the environment and `.env`, as for the API. The run records them in the results, and the report names them at the top. The CRM is always the simulated one with the access check off: the cases confirm no inquiry, so nothing is sent to a CRM.
+The provider modes, models and prices come from the environment and `.env`, as for the API. If `.env` names a live API, `make eval` calls it and the run costs money; `LLM_PROVIDER=local EMBEDDING_PROVIDER=local make eval` keeps it in the demo modes. A run in the local modes measures retrieval and the rules of the local mode, not the quality of an LLM.
+
+The exit code is 0 when the run completed and its files were written, whatever the cases scored, and 1 when the run could not be made. Read the report for the results. The run records them in the results, and the report names them at the top. The CRM is always the simulated one with the access check off: the cases confirm no inquiry, so nothing is sent to a CRM.
 
 In the local modes a second run gives the same replies and the same verdicts. `run.verdict_digest` in `results.json` is a fingerprint of the replies, citations, retrieval results and check outcomes, without times and database IDs: two runs with the same digest gave the same verdicts.
 
@@ -177,7 +179,7 @@ A case has the worst status of its turns. Retrieval and citation results are rep
 
 The report lists them under "Needs review". They can be decided in two ways, and the report keeps both apart from the measured numbers.
 
-**Manual review.** Put `manual-review.json` next to `results.json` and run `make eval EVAL_ARGS="--output-dir <dir> --render-only"`:
+**Manual review.** A reviewer, a person or an agent, decides the open checks. In every run kept in [`reports/`](reports/README.md) the reviewer was an AI coding agent, not an independent person; the `reviewer` field says so. Put `manual-review.json` next to `results.json` and run `make eval EVAL_ARGS="--output-dir <dir> --render-only"`:
 
 ```json
 {
