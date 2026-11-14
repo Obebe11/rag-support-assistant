@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the Handoff AI evaluation cases against the Northline corpus.
+"""Validate the RAG Support Assistant evaluation cases against the Northline corpus.
 
 Usage (from the repository root, Python 3.10+ standard library only):
 

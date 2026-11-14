@@ -3,7 +3,7 @@ import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "../lib/utils";
 import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "../workspaceTitlebar";
 
-/** Shared workspace top-bar geometry. Handoff AI: the desktop window options are removed. */
+/** Shared workspace top-bar geometry. RAG Support Assistant: the desktop window options are removed. */
 export function WorkspacePageHeader({
   className,
   ...props

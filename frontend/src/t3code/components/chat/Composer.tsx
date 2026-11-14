@@ -1,7 +1,7 @@
 /*
  * Adapted from T3 Code (apps/web/src/components/ChatView.tsx,
  * chat/ChatComposer.tsx, ComposerPromptEditor.tsx and
- * chat/ComposerPrimaryActions.tsx, MIT, (c) 2026 T3 Tools Inc.). Handoff AI
+ * chat/ComposerPrimaryActions.tsx, MIT, (c) 2026 T3 Tools Inc.). RAG Support Assistant
  * keeps the docked and centered ("draft hero") overlay, the glass shell, the
  * padding rows, the footer and the round send button. The Lexical editor is
  * replaced by a textarea with the editor's classes; model, mode and attachment

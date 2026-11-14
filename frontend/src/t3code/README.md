@@ -7,7 +7,7 @@ The files in this folder are copied or adapted from the web app of T3 Code.
 - Commit: `be7d35aae` (2026-08-21)
 - License: MIT, Copyright (c) 2026 T3 Tools Inc. The license text is in [LICENSE](LICENSE).
 
-Handoff AI is an independent project. It is not affiliated with or endorsed by T3 Tools Inc., and it uses no T3 Code names, logos, icons or interface texts. Everything outside this folder is original Handoff AI code under the repository's MIT License.
+RAG Support Assistant is an independent project. It is not affiliated with or endorsed by T3 Tools Inc., and it uses no T3 Code names, logos, icons or interface texts. Everything outside this folder is original RAG Support Assistant code under the repository's MIT License.
 
 The rest of the frontend imports this folder through the `~` alias (`~/components/ui/button`), so the copied files keep their original import paths.
 
@@ -23,7 +23,7 @@ The rest of the frontend imports this folder through the `~` alias (`~/component
 
 ## Files copied with small changes
 
-A change inside existing code is marked in the file with a `Handoff AI:` comment. A file whose change is a removal or a replaced import is described in the table only.
+A change inside existing code is marked in the file with a `RAG Support Assistant:` comment. A file whose change is a removal or a replaced import is described in the table only.
 
 | File | Source | Change |
 | --- | --- | --- |
@@ -49,7 +49,7 @@ These files keep the markup and class names of the originals and drop what a sup
 | `components/chat/Composer.tsx` | `components/ChatView.tsx`, `chat/ChatComposer.tsx`, `ComposerPromptEditor.tsx`, `chat/ComposerPrimaryActions.tsx` |
 | `components/chat/ChatMarkdown.tsx` | `components/ChatMarkdown.tsx` |
 
-## Written for Handoff AI
+## Written for RAG Support Assistant
 
 `hooks/useLocalStorage.ts` is not a copy. It keeps the two function names that the copied files import and stores one validated value, without Effect Schema.
 

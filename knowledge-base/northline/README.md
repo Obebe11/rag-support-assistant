@@ -1,6 +1,6 @@
 # Northline Knowledge Base
 
-This folder is the knowledge base for the main Handoff AI demo scenario: a support and lead intake assistant for an office equipment supplier.
+This folder is the knowledge base for the main RAG Support Assistant demo scenario: a support and lead intake assistant for an office equipment supplier.
 
 **Northline Office Equipment is a fictional company.** Every product, SKU, price, policy, address, phone number and email address here was written for this demo. Phone numbers use the reserved 555-01xx range and email addresses use the reserved `example.com` domain. Any resemblance to a real business is unintended.
 

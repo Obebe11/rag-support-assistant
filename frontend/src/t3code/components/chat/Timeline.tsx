@@ -1,6 +1,6 @@
 /*
  * Adapted from T3 Code (apps/web/src/components/chat/MessagesTimeline.tsx and
- * DraftHeroHeadline.tsx, MIT, (c) 2026 T3 Tools Inc.). Handoff AI keeps the
+ * DraftHeroHeadline.tsx, MIT, (c) 2026 T3 Tools Inc.). RAG Support Assistant keeps the
  * markup and classes of the scroll viewport, the centered column, the user
  * bubble, the assistant block and the working row. The virtualized list, tool
  * and plan rows, attachments, revert and copy actions are not ported; the

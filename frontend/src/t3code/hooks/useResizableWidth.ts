@@ -2,7 +2,7 @@ import { type PointerEvent as ReactPointerEvent, useCallback, useRef, useState }
 
 import { getLocalStorageItem, setLocalStorageItem } from "./useLocalStorage";
 
-// Handoff AI: a plain guard replaces Effect Schema.
+// RAG Support Assistant: a plain guard replaces Effect Schema.
 const WidthSchema = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 

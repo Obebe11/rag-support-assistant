@@ -1893,7 +1893,7 @@
   },
   "info": {
     "summary": "Grounded answers with citations and confirmed inquiry delivery to a CRM.",
-    "title": "Handoff AI API",
+    "title": "RAG Support Assistant API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",

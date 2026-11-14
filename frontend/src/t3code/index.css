@@ -3,7 +3,7 @@
  * (apps/web/src/index.css at commit be7d35aae, MIT, (c) 2026 T3 Tools Inc.).
  * See ./LICENSE and ./README.md.
  *
- * Changes for Handoff AI: kept the default (un-themed) token set, the glass,
+ * Changes for RAG Support Assistant: kept the default (un-themed) token set, the glass,
  * scroll-fade and safe-area utilities, the base layer, scrollbars and the chat
  * markdown rules. Removed the named themes and their artwork, the desktop
  * window chrome, the terminal, diff, settings and composer-drawer styles, and

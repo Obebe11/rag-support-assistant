@@ -276,7 +276,7 @@ def configure() -> int:
     text = ENV_PATH.read_text(encoding="utf-8")
     values = read_env_values(text)
     print(
-        "Set up Handoff AI. Press Enter to keep the value in brackets.\n"
+        "Set up RAG Support Assistant. Press Enter to keep the value in brackets.\n"
         "Keys are saved only in .env, which git ignores."
     )
     if created:

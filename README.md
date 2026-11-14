@@ -1,4 +1,4 @@
-# Handoff AI
+# RAG Support Assistant
 
 An open-source support assistant for company websites: it answers from your documents with citations, passes unanswered questions to a person, and delivers confirmed purchase inquiries to a CRM.
 
@@ -224,7 +224,7 @@ Before a client sees it, run the live check for the LLM, the embeddings and HubS
 
 ## License
 
-Original Handoff AI code and documentation are released under the [MIT License](LICENSE). You may use, modify and distribute them, including for commercial purposes, as long as the copyright and license notice are kept.
+Original RAG Support Assistant code and documentation are released under the [MIT License](LICENSE). You may use, modify and distribute them, including for commercial purposes, as long as the copyright and license notice are kept.
 
 ## Third-Party Materials
 

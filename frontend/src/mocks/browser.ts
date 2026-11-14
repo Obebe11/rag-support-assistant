@@ -13,7 +13,7 @@
 import { handlers, resetMockApi } from "./handlers";
 import type { MockScenario } from "./handlers";
 
-const STORAGE_KEY = "handoff-ai:mock-scenario";
+const STORAGE_KEY = "rag-support-assistant:mock-scenario";
 
 function parseScenario(spec: string): Partial<MockScenario> {
   const scenario: Record<string, string | number> = {};

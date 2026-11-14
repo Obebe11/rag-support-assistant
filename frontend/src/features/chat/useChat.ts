@@ -49,7 +49,7 @@ export interface Chat extends ChatState {
   startNew: () => void;
 }
 
-const STORAGE_KEY = "handoff-ai:conversation-id";
+const STORAGE_KEY = "rag-support-assistant:conversation-id";
 
 /** The conversation id lives for the browser tab; it is not a secret or a login. */
 const storedConversation = {

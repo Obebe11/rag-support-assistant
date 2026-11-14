@@ -3,11 +3,11 @@
 #   sed "s/^ADMIN_API_TOKEN=$/ADMIN_API_TOKEN=$(openssl rand -hex 32)/" .env.example > .env
 #   docker compose up --build
 # Load the demo knowledge base once: docker compose run --rm seed
-name: handoff-ai
+name: rag-support-assistant
 
 # One backend image, built by the `backend` service and reused by the others.
 x-backend: &backend
-  image: handoff-ai-backend:local
+  image: rag-support-assistant-backend:local
   env_file:
     - path: .env
       required: false

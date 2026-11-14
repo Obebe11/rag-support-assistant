@@ -1,6 +1,6 @@
 /*
  * Adapted from T3 Code (apps/web/src/components/chat/ProviderStatusBanner.tsx,
- * MIT, (c) 2026 T3 Tools Inc.). Handoff AI keeps the floating glass alert that
+ * MIT, (c) 2026 T3 Tools Inc.). RAG Support Assistant keeps the floating glass alert that
  * overlays the top of the content, and replaces the dismiss button with an
  * optional action. The alert is one row, so it fits in the timeline's top
  * spacer and never covers a message; `placement="inline"` puts it in the page

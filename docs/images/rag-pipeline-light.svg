@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title desc">
-<title id="title">How Handoff AI answers from documents</title>
+<title id="title">How RAG Support Assistant answers from documents</title>
 <desc id="desc">Indexing: upload, split into passages, embed, store the active version in PostgreSQL with pgvector. Answering: check the message, find passages, write the reply from them, verify citations. Outcomes: a grounded answer with sources, a knowledge gap with a human handoff, or a purchase inquiry delivered to the CRM after confirmation.</desc>
 <defs><marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8C959F"/></marker></defs>
 <rect width="960" height="640" rx="14" fill="#F6F8FA"/>
-<text x="32" y="46" font-size="22" font-weight="700" fill="#1F2328" text-anchor="start">How Handoff AI answers from documents</text>
+<text x="32" y="46" font-size="22" font-weight="700" fill="#1F2328" text-anchor="start">How RAG Support Assistant answers from documents</text>
 <text x="32" y="72" font-size="14" font-weight="400" fill="#59636E" text-anchor="start">Retrieval-augmented generation: search the company's documents first, then answer only from what was found.</text>
 <rect x="24" y="92" width="912" height="178" rx="12" fill="#FFFFFF" stroke="#D0D7DE"/>
 <text x="48" y="122" font-size="15" font-weight="700" fill="#8250DF" text-anchor="start">Indexing</text>

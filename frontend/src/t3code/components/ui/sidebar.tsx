@@ -20,7 +20,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { useIsMobile } from "~/hooks/useMediaQuery";
 import { getLocalStorageItem, setLocalStorageItem } from "~/hooks/useLocalStorage";
 import { resolveSidebarState, type ResponsiveSidebarState } from "./sidebarState";
-// Handoff AI: T3 Code validates the stored width with Effect Schema; a plain guard is enough here.
+// RAG Support Assistant: T3 Code validates the stored width with Effect Schema; a plain guard is enough here.
 const Schema = {
   Finite: (value: unknown): value is number => typeof value === "number" && Number.isFinite(value),
 };
@@ -124,7 +124,7 @@ function SidebarProvider({
       }
 
       // This sets the cookie to keep the sidebar state.
-      // Handoff AI: the Cookie Store API is missing in some browsers and in tests.
+      // RAG Support Assistant: the Cookie Store API is missing in some browsers and in tests.
       if (typeof cookieStore === "undefined") return;
       await cookieStore.set({
         expires: Date.now() + SIDEBAR_COOKIE_MAX_AGE * 1000,

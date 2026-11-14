@@ -1,7 +1,7 @@
 [project]
-name = "handoff-ai-backend"
+name = "rag-support-assistant-backend"
 version = "0.1.0"
-description = "Handoff AI backend: grounded answers with citations and confirmed inquiry delivery to a CRM."
+description = "RAG Support Assistant backend: grounded answers with citations and confirmed inquiry delivery to a CRM."
 requires-python = ">=3.13,<3.14"
 license = "MIT"
 dependencies = [

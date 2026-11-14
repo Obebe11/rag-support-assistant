@@ -1,6 +1,6 @@
 # Evaluation Cases
 
-This folder holds 40 evaluation cases for the Handoff AI assistant, the runner's reports, and the injection fixtures. The cases were written against the [Northline knowledge base](../knowledge-base/northline/README.md) before any retrieval or prompt tuning. They define expected behavior; the measured results are in [`reports/`](reports/README.md).
+This folder holds 40 evaluation cases for RAG Support Assistant, the runner's reports, and the injection fixtures. The cases were written against the [Northline knowledge base](../knowledge-base/northline/README.md) before any retrieval or prompt tuning. They define expected behavior; the measured results are in [`reports/`](reports/README.md).
 
 Results on these 40 cases describe this system on these questions and these documents. They are not a guarantee and do not predict behavior on other questions or other documents.
 

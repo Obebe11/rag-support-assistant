@@ -1,7 +1,7 @@
 /*
  * Adapted from T3 Code (apps/web/src/components/RightPanelTabs.tsx,
  * RightPanelSheet.tsx, preview/PreviewPanelShell.tsx and
- * chat/PanelLayoutControls.tsx, MIT, (c) 2026 T3 Tools Inc.). Handoff AI keeps
+ * chat/PanelLayoutControls.tsx, MIT, (c) 2026 T3 Tools Inc.). RAG Support Assistant keeps
  * the panel frame, the tab bar, the inline/sheet switch at 980px and the
  * header toggle. Surfaces, tab closing, "add surface", maximizing and the
  * desktop title bar handling are not ported; tabs are a fixed list given by

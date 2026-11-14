@@ -164,7 +164,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-[var(--sidebar-content-inset)]">
         <p className="m-0 px-2.5 pb-1 text-xs leading-relaxed text-muted-foreground">
-          Handoff AI demo. Northline Office Equipment is a fictional company.
+          RAG Support Assistant demo. Northline Office Equipment is a fictional company.
         </p>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -103,7 +103,7 @@ describe("Chat: empty state and history", () => {
   });
 
   it("offers a retry when the stored conversation cannot be loaded", async () => {
-    window.sessionStorage.setItem("handoff-ai:conversation-id", "22222222-2222-4222-8222-222222222222");
+    window.sessionStorage.setItem("rag-support-assistant:conversation-id", "22222222-2222-4222-8222-222222222222");
     server.use(
       http.get("*/api/conversations/:id", () =>
         HttpResponse.json({ error: { code: "internal_error", message: "Boom", details: [] } }, { status: 500 }),

@@ -1,6 +1,6 @@
 # Architecture
 
-Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes how the system is built: the repository layout, the data model, the API contract, the provider modes, the chat and inquiry logic, background jobs, the frontend and the development commands.
+RAG Support Assistant answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes how the system is built: the repository layout, the data model, the API contract, the provider modes, the chat and inquiry logic, background jobs, the frontend and the development commands.
 
 Status: everything described here is implemented and covered by automated tests in the local and simulated modes. The chat has also been evaluated once with a live LLM and a live embedding API ([report](../evals/reports/live-glm-5.3-flash/report.md)). What has not been run (a live HubSpot account, Docker Compose) is listed in [Known limits](#known-limits). Inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
 

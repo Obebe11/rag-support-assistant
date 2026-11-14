@@ -52,7 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await engine.dispose()
 
     app = FastAPI(
-        title="Handoff AI API",
+        title="RAG Support Assistant API",
         version=__version__,
         summary="Grounded answers with citations and confirmed inquiry delivery to a CRM.",
         lifespan=lifespan,

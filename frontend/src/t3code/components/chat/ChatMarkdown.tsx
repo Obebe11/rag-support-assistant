@@ -1,6 +1,6 @@
 /*
  * Adapted from T3 Code (apps/web/src/components/ChatMarkdown.tsx, MIT,
- * (c) 2026 T3 Tools Inc.). Handoff AI keeps the wrapper classes and the
+ * (c) 2026 T3 Tools Inc.). RAG Support Assistant keeps the wrapper classes and the
  * `.chat-markdown` styles, and renders with react-markdown and GFM only: no
  * syntax highlighting, file links, raw HTML, copy handling or streaming.
  */

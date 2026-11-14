@@ -1,5 +1,5 @@
 /*
- * Handoff AI: written for this project, not copied. T3 Code's `useLocalStorage`
+ * RAG Support Assistant: written for this project, not copied. T3 Code's `useLocalStorage`
  * validates values with Effect Schema; the sidebar only needs to remember one
  * number, so this keeps the two function names and drops the dependency.
  */

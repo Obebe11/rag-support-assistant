@@ -1,6 +1,6 @@
 /*
  * Adapted from T3 Code (apps/web/src/components/AppSidebarLayout.tsx, MIT,
- * (c) 2026 T3 Tools Inc.). Handoff AI keeps the shell composition (sidebar
+ * (c) 2026 T3 Tools Inc.). RAG Support Assistant keeps the shell composition (sidebar
  * provider, resizable off-canvas sidebar, fixed sidebar trigger) and drops the
  * desktop bridge, keybindings, settings navigation and thread state.
  */
@@ -9,7 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Sidebar, SidebarProvider, SidebarRail, SidebarTrigger } from "~/components/ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 
-const SIDEBAR_WIDTH_STORAGE_KEY = "handoff-ai:sidebar-width";
+const SIDEBAR_WIDTH_STORAGE_KEY = "rag-support-assistant:sidebar-width";
 const SIDEBAR_DEFAULT_WIDTH = 16 * 16;
 const SIDEBAR_MIN_WIDTH = 13 * 16;
 const SIDEBAR_MAX_WIDTH = 26 * 16;
