@@ -209,6 +209,25 @@ describe("Chat: answer types", () => {
     expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
   });
 
+  it("shows the sources of a clarification that names the documented options", async () => {
+    replyWith(
+      assistantMessage({
+        answer_type: "clarification",
+        content: "Shipping depends on the method. Do you mean Standard Ground or Two-Day Air?",
+        citations: shippingCitations,
+      }),
+    );
+    const { user } = renderApp("/");
+
+    await ask(user, "How much does shipping cost?");
+
+    const log = conversation();
+    expect(await within(log).findByText(/Standard Ground or Two-Day Air/)).toBeVisible();
+    const sources = within(log).getByRole("region", { name: "Sources" });
+    expect(within(sources).getAllByRole("listitem")).toHaveLength(shippingCitations.length);
+    expect(within(log).queryByRole("button", { name: "Talk to a person" })).not.toBeInTheDocument();
+  });
+
   it("shows a refusal as a plain assistant message", async () => {
     const { user } = renderApp("/");
 

@@ -61,13 +61,22 @@ const CLOSED_PANEL: PanelState = {
   userClosed: false,
 };
 
+/** Reply types that can carry sources. A refusal and an unknown type never show them. */
+const CITING_TYPES = new Set<MessageRead["answer_type"]>([
+  "grounded",
+  "inquiry_offer",
+  "clarification",
+  "knowledge_gap",
+]);
+
 /**
  * A grounded answer has sources. So does an inquiry offer whose message also
  * asked a question: the reply answers it first and then offers the inquiry.
+ * A clarifying question or a knowledge gap has them when it names documented
+ * facts, such as the options to choose from.
  */
 function hasSources(message: MessageRead): boolean {
-  const answered = message.answer_type === "grounded" || message.answer_type === "inquiry_offer";
-  return answered && (message.citations?.length ?? 0) > 0;
+  return CITING_TYPES.has(message.answer_type) && (message.citations?.length ?? 0) > 0;
 }
 
 /**

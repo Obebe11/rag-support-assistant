@@ -27,11 +27,11 @@ Version 1. The scenario above works end to end in the demo modes and is covered 
 | Part | State |
 | --- | --- |
 | Knowledge base: upload, replacement, deletion, indexing of Markdown and text PDF | Works. Tested on PostgreSQL with pgvector. |
-| Chat with citations, knowledge gaps, follow-up questions, refusal of instruction overrides | Works in the local mode. The LLM mode is tested against a mock API only. |
+| Chat with citations, knowledge gaps, follow-up questions, refusal of instruction overrides | Works in the local mode and with a live LLM. The LLM mode was evaluated once with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2` through OpenRouter; see [Evaluation](#evaluation). |
 | Purchase inquiries and human handoff: draft, preview, confirmation, delivery, retries | Works with the simulated CRM. The HubSpot provider is tested against an in-memory fake of the HubSpot API only. |
 | Visitor chat and admin page | Work. Checked in a browser on a real backend at 390 by 844 and 1440 by 1000 pixels. |
 
-**Checked once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: the demo documents were indexed, and three questions got a cited answer, a reply that the documents do not say, and an answer followed by an inquiry offer. The evaluation has not been run with a live LLM.
+**Evaluated once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: 37 of the 40 evaluation cases passed after a review of the open checks by an AI coding agent. The report is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md).
 
 **Not verified.** No HubSpot account and no Docker host were available, so these have never been run by hand:
 
@@ -102,7 +102,7 @@ EMBEDDING_API_KEY=...
 EMBEDDING_MODEL=...
 ```
 
-`LLM_REASONING_EFFORT` is optional and only for reasoning models: `low` makes replies faster. The app sets no output token limit, so a reasoning model does not run out of tokens before its reply. Restart `make dev` after a change. When the embedding model changes, `make dev` indexes every document again before it starts, uploads included: stored vectors of another model are not searched. The two providers are independent, so one can stay local.
+`LLM_REASONING_EFFORT` is optional and only for reasoning models: `low` makes replies faster. The app sends no output token limit, so the provider's default limit applies. If a reasoning model spends it all on reasoning before it writes the reply, the reply fails with an error that suggests `LLM_REASONING_EFFORT=low`. Restart `make dev` after a change. When the embedding model changes, `make dev` indexes every document again before it starts, uploads included: stored vectors of another model are not searched. The two providers are independent, so one can stay local.
 
 ### HubSpot
 
@@ -141,7 +141,11 @@ Every setting has a default that runs the demo, and every setting is listed with
 
 `make eval` runs 40 evaluation cases on an isolated database and writes a report and a machine-readable results file to `evals/reports/latest/`. The cases cover answerable questions, questions the knowledge base cannot answer, multi-turn conversations and attempts to override instructions.
 
-The baseline run is in [`evals/reports/local-baseline/`](evals/reports/local-baseline/report.md). It was made in the local demo modes, with no language model and no embedding model: 8 of 40 cases passed the automated first pass, 20 failed and 12 needed review; after a manual review of the open checks, 20 passed and 20 failed. The expected source was in the top five results for 21 of 33 turns. The report explains each failure. No run with a live LLM has been made yet.
+The run with a live LLM and live embeddings is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md): `z-ai/glm-5.3-flash` wrote the replies and `amazon/titan-embed-text-v2` ran the search, both through OpenRouter. 15 of 40 cases passed the automated first pass, 3 failed and 22 needed review; after the review of the open checks, 37 passed and 3 failed. 48 of 50 replies had the expected response type, 63 of 68 required facts were found, and the expected source was in the top five search results for 29 of 33 turns. The notes in the report explain the three failures and what the LLM judge found.
+
+The baseline run is in [`evals/reports/local-baseline/`](evals/reports/local-baseline/report.md). It was made in the local demo modes, with no language model and no embedding model: 8 of 40 cases passed the automated first pass, 20 failed and 12 needed review; after the review of the open checks, 20 passed and 20 failed. The expected source was in the top five results for 21 of 33 turns. The report explains each failure.
+
+In both runs the open checks were reviewed by an AI coding agent, not by a person; each `manual-review.json` names the reviewer and the method.
 
 One change after the baseline touches replies: a purchase request that also asks a question is now answered before the inquiry is offered. The run after it, [`evals/reports/local-after-integration/`](evals/reports/local-after-integration/report.md), differs in one reply of 50, and its case totals are the same as the baseline's.
 
@@ -153,7 +157,7 @@ How to run the evaluation with a live LLM and the optional LLM judge: [`evals/RE
 
 ## Limitations
 
-- **The local mode is lexical and is not an LLM.** It finds an answer only when the question and the document share words, and it quotes; it cannot paraphrase, compare, compute or ask a clarifying question well. Half of the evaluation cases fail in this mode. Judge answer quality only with a live LLM and a live embedding model, and that has not been measured here.
+- **The local mode is lexical and is not an LLM.** It finds an answer only when the question and the document share words, and it quotes; it cannot paraphrase, compare, compute or ask a clarifying question well. Half of the evaluation cases fail in this mode. Judge answer quality only with a live LLM and a live embedding model; the [live run](evals/reports/live-glm-5.3-flash/report.md) measures one model on the demo corpus.
 - **The override guard is a set of patterns.** It refuses explicit attempts to change the assistant's instructions or role, in messages and in document text. It is a first line of defense and does not catch every phrasing.
 - **Visitors are not authenticated.** A conversation and an inquiry are addressed by a random ID and need no login. Anyone who has the ID of an inquiry can read it, including the technical text of its last delivery error. The interface does not show that text to visitors; the API returns it.
 - **Admin access is one shared token.** There are no users, roles or audit log.

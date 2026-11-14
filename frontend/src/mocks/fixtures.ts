@@ -267,7 +267,7 @@ export const clarificationReply = (): MessageRead =>
   assistantMessage({
     answer_type: "clarification",
     content:
-      "Which product do you mean? Northline sells the P-240 laser printer, the C-360 color multifunction printer, the LP-420 label printer, the S-300 shredder and the L-125 laminator.",
+      "Which product do you mean? Please name the model or the policy your question is about.",
   });
 
 export const refusalReply = (): MessageRead =>

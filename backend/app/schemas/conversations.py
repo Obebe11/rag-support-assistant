@@ -110,8 +110,10 @@ class MessageRead(ApiModel):
     )
     citations: list[Citation] = Field(
         default_factory=list,
-        description="Sources of a `grounded` answer. An `inquiry_offer` has them when the "
-        "visitor's message also asked a question that the documents answer.",
+        description="Sources of a `grounded` answer. A `clarification` or `knowledge_gap` "
+        "has them when it names documented facts, such as the options to choose from. An "
+        "`inquiry_offer` has them when the visitor's message also asked a question that the "
+        "documents answer.",
     )
     inquiry: InquiryRead | None = Field(
         default=None,

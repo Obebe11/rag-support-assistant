@@ -4,7 +4,7 @@ import type { Citation } from "../../api/client";
 import { sourceLocation } from "./sources";
 
 /**
- * The sources of a grounded answer, under the answer text. Each row opens the
+ * The sources of an answer, under the answer text. Each row opens the
  * full excerpt in the side panel. The retrieval `score` is not shown: it ranks
  * passages and says nothing about whether the answer is correct.
  */

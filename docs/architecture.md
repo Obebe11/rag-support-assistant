@@ -2,7 +2,7 @@
 
 Handoff AI answers visitor questions from company documents, shows its sources, and sends confirmed purchase inquiries to a CRM. This document describes how the system is built: the repository layout, the data model, the API contract, the provider modes, the chat and inquiry logic, background jobs, the frontend and the development commands.
 
-Status: everything described here is implemented and covered by automated tests in the local and simulated modes. What has not been run (a live LLM, a live embedding API, a live HubSpot account, Docker Compose) is listed in [Known limits](#known-limits). Inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
+Status: everything described here is implemented and covered by automated tests in the local and simulated modes. The chat has also been evaluated once with a live LLM and a live embedding API ([report](../evals/reports/live-glm-5.3-flash/report.md)). What has not been run (a live HubSpot account, Docker Compose) is listed in [Known limits](#known-limits). Inquiries and CRM delivery are described in [inquiries.md](inquiries.md).
 
 ## Repository layout
 
@@ -108,8 +108,8 @@ The contract lives in `backend/app/schemas` and is exported to `docs/openapi.jso
 **Assistant replies.** `answer_type` tells the UI what to render:
 
 - `grounded`: an answer with `citations` (document, version, page or section, excerpt).
-- `knowledge_gap`: the documents do not answer the question; the UI offers a human handoff.
-- `clarification`: the assistant asks for more detail.
+- `knowledge_gap`: the documents do not answer the question; the UI offers a human handoff. When the reply names a related documented fact, `citations` holds its source.
+- `clarification`: the assistant asks for more detail. When the question names the documented options, `citations` holds their sources.
 - `inquiry_offer`: the visitor wants to buy; `inquiry` may carry a draft to review and confirm. When the same message also asks a question, the reply answers it first: the text starts with the answer, `citations` holds its sources, and `usage.question_answer_type` is `grounded` or `knowledge_gap`.
 - `refusal`: the message tried to override the assistant's instructions or role; the assistant declines.
 
@@ -147,7 +147,7 @@ Each provider is selected by its own setting. Model IDs, base URLs and keys come
 
 Interfaces: `app/providers/llm/base.py`, `app/providers/embeddings/base.py`, `app/providers/crm/base.py`. The factory in `app/providers/factory.py` calls `from_settings` on the class for the selected mode, so a provider can read new settings without a factory change. Provider failures raise `ProviderError` with a `retryable` flag.
 
-The LLM and embedding providers are implemented. The `openai_compatible` classes share the HTTP client in `app/providers/openai_http.py`: timeouts, connection errors and the statuses 408, 409, 425, 429 and 5xx are retryable `ProviderError`s, other statuses and malformed replies are not. They are tested against a mock transport only and have not been run against a live API. [Knowledge base and chat](#knowledge-base-and-chat) describes the local modes.
+The LLM and embedding providers are implemented. The `openai_compatible` classes share the HTTP client in `app/providers/openai_http.py`: timeouts, connection errors and the statuses 408, 409, 425, 429 and 5xx are retryable `ProviderError`s, other statuses and malformed replies are not. They are tested against a mock transport, and the evaluation has been run once against a live API through OpenRouter ([report](../evals/reports/live-glm-5.3-flash/report.md)). [Knowledge base and chat](#knowledge-base-and-chat) describes the local modes.
 
 ## Chat and inquiries
 
@@ -203,7 +203,7 @@ Retrieval is available without an answer in two ways:
 4. **Document instructions are data.** Before a passage is quoted or sent to an LLM, blocks that address the assistant or try to override instructions are removed (`strip_embedded_instructions`), and a section whose heading does so is dropped whole. The LLM prompt repeats the rule.
 5. **Answer.**
    - Local mode: each content word of the question is weighted by how rare it is among the retrieved passages. The reply is `grounded` only if the quoted passages cover at least half of that weight; otherwise it is a `knowledge_gap`. A message without any content word gets a `clarification`. The retrieval score alone never makes a reply grounded.
-   - LLM mode: the model chooses the answer type. A `grounded` reply must cite at least one excerpt that was really sent; if it does not, the reply is replaced by a `knowledge_gap`, and `usage.note` records why. A knowledge gap that does not already mention a person or the team gets an offer to pass the question on.
+   - LLM mode: the model chooses the answer type. A `grounded` reply must cite at least one excerpt that was really sent; if it does not, the reply is replaced by a `knowledge_gap`, and `usage.note` records why. A `clarification` may list the documented options, so it must cite them in the same way; without a valid citation its text is replaced by a general question that states no facts. A `knowledge_gap` may name a related documented fact and cite it; if it lists citations and none is valid, it is replaced by the standard knowledge-gap text. Valid citations of these two types are shown like those of a grounded answer. A knowledge gap that does not already mention a person or the team gets an offer to pass the question on.
 
 A provider failure, or an LLM reply that is not the expected JSON, returns `503`; nothing is stored, and the visitor can send the message again.
 
@@ -250,7 +250,7 @@ Routes: `/` (visitor chat) and `/admin`. The UI talks to the backend only throug
 - `src/api/client.ts` exports `api` (visitor endpoints), `createAdminApi(token)`, and `unwrap`, which returns data or throws an `ApiError` in the common format. `src/api/schema.d.ts` is generated; never edit it by hand.
 - `src/t3code/` is the UI kit: theme tokens, controls, the app shell, the timeline, the composer and the right panel, copied or adapted from T3 Code (MIT). Its [README](../frontend/src/t3code/README.md) lists every file, its source and the changes. The rest of the code imports it through the `~` alias. The interface carries no T3 Code branding.
 - `src/app/` is the page frame: the sidebar with the demo status, the header with the mode badge, and the health banner. `HealthProvider` (`src/hooks/useHealth.tsx`) loads `/api/health`; the badge and the banner read it. The badge sits in a header of fixed height and the banner overlays a reserved spacer, so neither moves the content.
-- `src/features/chat/` holds the conversation state (`useChat`: history restore, sending, retry after a failed send) and the sources list. A reply is rendered by `answer_type`: `grounded` shows the text and its citations (document, version, page or section, excerpt; the retrieval score is not shown); `knowledge_gap` offers a human handoff; `inquiry_offer` opens the inquiry form filled from `message.inquiry`, and shows citations when the reply answered a question first; every other type, including an unknown one, is a plain message. `MessageRead.usage` is never shown to the visitor.
+- `src/features/chat/` holds the conversation state (`useChat`: history restore, sending, retry after a failed send) and the sources list. A reply is rendered by `answer_type`: `grounded` shows the text and its citations (document, version, page or section, excerpt; the retrieval score is not shown); `clarification` and `knowledge_gap` show citations the same way when they have them; `knowledge_gap` offers a human handoff; `inquiry_offer` opens the inquiry form filled from `message.inquiry`, and shows citations when the reply answered a question first; every other type, including an unknown one, is a plain message. `MessageRead.usage` is never shown to the visitor.
 - `src/features/inquiry/` holds the inquiry flow (`useInquiryFlow`): form, validation by the contract and `missing_fields`, preview, explicit confirmation, delivery status with polling, and a manual retry after a failure. A handoff uses `kind: "handoff"` and asks only for the question and the contact. After a reload, `restoredHandoffs.ts` attaches each handoff request in `conversation.inquiries` to the knowledge gap reply it followed, so its card and delivery status come back; purchase drafts come back through `message.inquiry`. The visitor sees a plain delivery status; the technical `last_error` and the attempt log appear only in the admin.
 - `src/features/admin/` holds the admin session (the token lives in memory only, never in browser storage), documents (upload, replace, delete, versions, indexing status with polling) and inquiries (delivery status, failure reason, attempt log).
 - `src/lib/errors.ts` maps transport failures and API errors to the messages the UI shows. `src/lib/timing.ts` holds the polling intervals.
@@ -297,7 +297,7 @@ Ports come from `BACKEND_PORT` and `FRONTEND_PORT` (environment or `.env`).
 ## Known limits
 
 - The Docker Compose setup was written without a Docker host and has not been run by hand. The CI workflow (`.github/workflows/ci.yml`) builds the images and starts the stack.
-- The `openai_compatible` LLM and embedding providers have not been run against a live API. The evaluation has been run in the local modes only.
+- The `openai_compatible` LLM and embedding providers have been run against one live API (OpenRouter) with one LLM and one embedding model, in one evaluation run. Other providers and models have not been tried.
 - FastAPI reads a request body before it checks the admin token. The document upload routes are protected by `app/api/upload_guard.py`, which checks the token and `MAX_UPLOAD_BYTES` before the body is read. Other admin routes take small JSON bodies; the nginx configuration caps the body size for them.
 - A human handoff is an inquiry with `kind: "handoff"`: the UI creates it after a knowledge gap, the visitor confirms it, and it is delivered to the CRM like a purchase inquiry. Nobody is notified by email.
 - The HubSpot integration has not been verified on a live account; see [inquiries.md](inquiries.md).

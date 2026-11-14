@@ -228,9 +228,7 @@ Limits to keep in mind:
 - The judge's verdicts are LLM output and can be wrong. They are not human review. Check them by hand where they matter.
 - The judge sees the cited excerpts, not the whole passages. An excerpt is at most 500 characters, so a fact can be in the passage and still be missing from the excerpt.
 - The same model writes the replies and judges them. A model can be lenient toward its own output.
-- The `openai_compatible` providers and the judge are tested against scripted replies only. They have not been run against a live API yet.
-
-Report measured results only.
+- The `openai_compatible` providers and the judge have been run against a live API once, through OpenRouter: see [`reports/live-glm-5.3-flash/`](reports/live-glm-5.3-flash/report.md). In that run the judge marked 17 of 33 grounded replies as not supported; every flagged fact was in the cited section, outside the excerpt the judge sees.
 
 ## Injection fixtures
 
