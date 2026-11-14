@@ -6,6 +6,10 @@ This repository is a working demo. The assistant answers visitor questions from 
 
 It is for people who evaluate or build this kind of assistant: the repository shows the whole path from a document upload to a CRM record, with the limits stated. The demo company, Northline Office Equipment, is fictional.
 
+<img src="docs/screenshots/chat-answer-with-sources.png" alt="The visitor chat at desktop width: the question &quot;How much does shipping cost?&quot; with a reply that quotes the FAQ, and the side panel showing the cited passage with its document, version and section." width="960">
+
+Screenshot taken in the local demo mode: the reply is assembled from quotes of the documents, without a language model. See [Screenshots](#screenshots).
+
 ## What the demo shows
 
 1. A visitor asks about shipping, returns or warranty. The reply quotes the documents and lists its sources: document, version, section or page, and the excerpt.
@@ -14,6 +18,40 @@ It is for people who evaluate or build this kind of assistant: the repository sh
 4. A purchase request ("I want 12 LP-420 printers") opens an inquiry form filled from the conversation. If the same message asks a question, the reply answers it first. Nothing is sent until the visitor confirms the preview.
 5. The confirmed inquiry is delivered to the CRM by a background worker. A temporary error is retried automatically; a failed delivery can be sent again. Confirming twice or retrying does not create a second CRM record. With HubSpot, a second note is possible in rare cases; see [Limitations](#limitations).
 6. An administrator signs in with a token, uploads, replaces and deletes documents, and sees every inquiry with its delivery log. After a replacement, answers come from the new version only; a deleted document is no longer cited.
+
+## Screenshots
+
+All frames are real runs of the demo on a fresh database in the local demo modes (`LLM_PROVIDER=local`, `EMBEDDING_PROVIDER=local`, `CRM_PROVIDER=simulated`): the replies are quotes of the documents, not text written by an AI model, and every delivery is labeled "simulated". The names and contacts are made up.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/knowledge-gap-handoff-review.png" alt="A question the documents do not answer: the assistant says it could not find an answer and offers to pass the question to a person; the side panel shows the request for review with the contact details and a notice that delivery is simulated.">
+      <br>A question the documents do not answer: no guess, an offer to talk to a person, and a review step before anything is sent.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/inquiry-review.png" alt="A purchase request that also asks about the warranty: the reply quotes the warranty passage first, then the side panel shows the filled inquiry for review with a Confirm and send button.">
+      <br>"I want 12 LP-420 printers, what is the warranty?": the question is answered first, the inquiry waits for confirmation.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/inquiry-delivered.png" alt="The same inquiry after confirmation: the side panel shows the delivery status Delivery simulated, one attempt, and the data that was sent.">
+      <br>After confirmation: the delivery status and the data that was sent. The simulated CRM receives nothing and the interface says so.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/admin-inquiries-delivery-log.png" alt="The admin page, Inquiries tab: three inquiries with their delivery status, and the delivery log of one of them with two failed attempts and a successful third.">
+      <br>Admin, inquiries: every inquiry with its status. The open log shows two temporary errors (the <code>+fail2</code> tag) and a delivery on the third attempt.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/mobile-chat-answer.png" alt="The visitor chat on a 390 by 844 pixel screen: the question, the reply with a quoted passage and one source card." width="260">
+      <br>The chat at 390 by 844 pixels.
+    </td>
+    <td width="50%" valign="top"></td>
+  </tr>
+</table>
 
 ## How it works
 
