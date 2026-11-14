@@ -53,6 +53,30 @@ All frames are real runs of the demo on a fresh database in the local demo modes
   </tr>
 </table>
 
+## What it solves
+
+- **Repeated questions get answered from current documents.** Shipping, returns and warranty questions are answered at any hour from the company's own documents. Each answer lists its sources, so the visitor and the support team can check it.
+- **A question without an answer is not lost.** The assistant says the documents do not cover it and offers a human handoff. The visitor confirms the question and the contact details, and the request is delivered to the CRM with a log of every attempt.
+- **Purchase interest becomes a CRM record.** A purchase request turns into a structured inquiry: product, quantity, timeline and contact. After the visitor confirms it, it is delivered to the CRM, with no manual copying.
+- **Knowledge is updated on the admin page.** An administrator uploads, replaces or deletes a document. After a replacement, answers come from the new version only; a deleted document is no longer cited.
+- **The team sees what happened to each request.** The admin page lists every inquiry and human handoff with its delivery status and attempt log.
+
+### Compared with basic AI assistants
+
+Three common shortcuts: a general chat model with no company context, a bot whose only knowledge is its system prompt, and a thin wrapper that passes messages to an LLM API.
+
+| | No company context | Prompt-only bot | Thin API wrapper | This project |
+| --- | --- | --- | --- | --- |
+| Where the answer comes from | The model's training data | A few paragraphs in the prompt | Whatever the model writes | Passages retrieved from the company's documents for each question |
+| A question the documents do not answer | The model may guess | The model may guess | The model may guess | Says it is a knowledge gap and offers a human handoff |
+| Can the answer be checked | No sources | No sources | No sources | Sources: document, version, section or page, excerpt. With a live LLM, a reply that cites no retrieved passage becomes a knowledge gap |
+| Updating knowledge | Not possible | Edit the prompt by hand, within its size limit | Change the prompt or the code | Upload, replace or delete a document; an old version is not cited |
+| Attempts to rewrite the instructions | Left to the model | Left to the model | Left to the model | A pattern-based override guard on messages and document text, covered by 5 evaluation cases |
+| Actions | Text only | Text only | Text only | Inquiry and human handoff after visitor confirmation; CRM delivery with an idempotency key, retries and an attempt log |
+| Measured quality | No built-in evaluation | No built-in evaluation | No built-in evaluation | 40 evaluation cases; with a live LLM, 37 of 40 passed after an AI coding agent reviewed the open checks ([report](evals/reports/live-glm-5.3-flash/report.md)) |
+
+Retrieval and the citation check reduce made-up answers; they do not remove them. The model can still misread a passage it found and cite it. These results were measured on the demo corpus only; see [Evaluation](#evaluation) and [Limitations](#limitations).
+
 ## How it works
 
 <picture>
