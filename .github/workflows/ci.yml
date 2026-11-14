@@ -1,0 +1,101 @@
+# The same checks as `make check` and `make smoke`, plus a build and a start of the
+# Docker Compose stack.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.x"
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        run: uv sync --locked
+        working-directory: backend
+      # Ruff, ruff format, mypy and pytest; the tests start an embedded PostgreSQL.
+      - run: make check-backend
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # The version comes from packageManager in frontend/package.json.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          # The oldest major version that frontend/package.json supports.
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      # API types, lint, type check, tests and the production build.
+      - run: make check-frontend
+
+  smoke:
+    name: Smoke scenario
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.x"
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        run: uv sync --locked
+        working-directory: backend
+      - run: make smoke
+
+  docker:
+    name: Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create .env as the README does
+        run: sed "s/^ADMIN_API_TOKEN=$/ADMIN_API_TOKEN=$(openssl rand -hex 32)/" .env.example > .env
+      - name: Build the images
+        run: docker compose build
+      - name: Start the stack
+        run: docker compose up --detach
+      - name: Load the demo knowledge base
+        run: docker compose run --rm seed
+      - name: Check the API through the frontend
+        run: |
+          curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-all-errors \
+            http://localhost:5173/api/health
+          echo
+          token=$(sed -n 's/^ADMIN_API_TOKEN=//p' .env)
+          curl --fail --silent --show-error --output /dev/null \
+            --header "Authorization: Bearer $token" http://localhost:5173/api/admin/documents
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            http://localhost:5173/api/admin/documents)
+          test "$status" = 401
+          curl --fail --silent --show-error --output /dev/null http://localhost:5173/
+      - name: Show the logs
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes
