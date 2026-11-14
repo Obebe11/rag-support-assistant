@@ -145,8 +145,11 @@ def test_a_failed_check_leaves_env_unchanged_unless_confirmed(
     assert env_files.read_text() == before
 
 
-def test_init_mode_needs_no_answers(env_files: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_init_mode_needs_no_answers(
+    env_files: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     monkeypatch.setattr("sys.argv", ["configure", "--init"])
 
     assert configure.main() == 0
     assert env_files.exists()
+    assert "Next: run `make dev`, then open http://localhost:5173" in capsys.readouterr().out

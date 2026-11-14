@@ -26,16 +26,16 @@ Version 1. The scenario above works end to end in the demo modes and is covered 
 
 **Checked once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: the demo documents were indexed, and three questions got a cited answer, a reply that the documents do not say, and an answer followed by an inquiry offer. The evaluation has not been run with a live LLM.
 
-**Not verified.** No HubSpot account and no Docker host were available, so these have never been run:
+**Not verified.** No HubSpot account and no Docker host were available, so these have never been run by hand:
 
 - a live HubSpot account (`CRM_PROVIDER=hubspot`);
-- the Docker Compose stack.
+- the Docker Compose stack. The [CI workflow](.github/workflows/ci.yml) builds and starts it; see [Docker Compose](#docker-compose).
 
 **The demo modes are not the product.** The defaults need no keys: `LLM_PROVIDER=local` writes no text and quotes the retrieved passages that share words with the question; `EMBEDDING_PROVIDER=local` matches words, not meaning; `CRM_PROVIDER=simulated` delivers to nobody. The interface and `GET /api/health` label each of them, and a simulated delivery is never shown as a CRM record.
 
 ## Quick start
 
-Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), Node.js 22 or later, [pnpm](https://pnpm.io/), GNU Make. Linux or macOS on x86-64 or ARM64. No Docker, no system PostgreSQL and no API key are needed.
+Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), Node.js 22.22 or later, [pnpm](https://pnpm.io/), GNU Make. Linux or macOS on x86-64 or ARM64. No Docker, no system PostgreSQL and no API key are needed. To install pnpm, run `corepack enable` (Corepack ships with Node.js 22 and 24) or `npm install --global pnpm`; `frontend/package.json` pins the version.
 
 ```
 make setup    # install the dependencies and create .env with demo settings
@@ -63,6 +63,8 @@ make smoke      # the scenario above over HTTP, on an isolated database, in the 
 make eval       # the 40 evaluation cases on an isolated database
 make openapi    # regenerate docs/openapi.json and the frontend API types
 ```
+
+The [CI workflow](.github/workflows/ci.yml) runs `make check` and `make smoke` on every push and pull request, and builds and starts the Docker Compose stack.
 
 ### Admin page
 
@@ -104,12 +106,14 @@ Run `make configure` and answer yes to HubSpot, or set `CRM_PROVIDER=hubspot` an
 A [Compose file](docker-compose.yml) for PostgreSQL with pgvector, the migrations, the API, the worker and the frontend behind nginx is included:
 
 ```
-cp .env.example .env
+sed "s/^ADMIN_API_TOKEN=$/ADMIN_API_TOKEN=$(openssl rand -hex 32)/" .env.example > .env
 docker compose up --build
 docker compose run --rm seed    # once: load the demo knowledge base
 ```
 
-It was written on a machine without Docker and has not been run. Expect to fix it before you rely on it.
+The first command copies `.env.example` to `.env` with a random admin token; it needs neither Python nor uv. Skip it if `make setup` has already created `.env`. Compose stops with a message while `ADMIN_API_TOKEN` is empty. Open `http://localhost:5173`; on `/admin`, enter the `ADMIN_API_TOKEN` value from `.env`.
+
+The stack was written on a machine without Docker. The Compose file is validated against the Compose specification, and the CI workflow builds the images, starts the stack, loads the demo documents and checks the API and the admin token through nginx. It has not been run by hand.
 
 ## Architecture
 
@@ -174,9 +178,9 @@ Original Handoff AI code and documentation are released under the [MIT License](
 The MIT License covers only original work in this repository. Third-party materials keep their own licenses:
 
 - **Odoo documentation articles** in `demo-docs/odoo/` and `demo-docs/odoo-replacement-test/` remain under **CC BY-SA 4.0**. Attribution, the original license and a source manifest are kept in each folder. See the [corpus licensing notice](demo-docs/odoo/README.md#attribution-and-license) and the [Odoo documentation license](demo-docs/odoo/LICENSE). The application does not load these articles; they are an [alternative corpus](demo-docs/README.md).
-- **T3 Code interface code** in `frontend/src/t3code/` is copied or adapted from [T3 Code](https://github.com/pingdotgg/t3code) (`apps/web`, commit `be7d35aae`) and remains under the **MIT License**, Copyright (c) 2026 T3 Tools Inc. The license text, the list of files and the changes are kept in that folder: [LICENSE](frontend/src/t3code/LICENSE), [README](frontend/src/t3code/README.md). No T3 Code names, logos, icons or interface texts are used. The frontend dependencies added with it are under MIT, Apache-2.0 or ISC.
-- **Dependencies** are not copied into this repository. They are installed from PyPI and npm and keep their own licenses. The direct dependencies listed in `backend/pyproject.toml` and `frontend/package.json` are under MIT, Apache-2.0, BSD-3-Clause or ISC.
-- **PostgreSQL and pgvector** are used as the database and are under the PostgreSQL License. They are not part of this repository: Docker Compose pulls the `pgvector/pgvector` image, and local development and the tests use the `pixeltable-pgserver` package, a development-only dependency. The package itself is under Apache-2.0; its Linux wheel bundles binaries of PostgreSQL and pgvector and, according to the wheel's own component list, copies of GNU Readline (GPL) and ncurses. None of them is copied into this repository or into the Docker images.
+- **T3 Code interface code** in `frontend/src/t3code/` is copied or adapted from [T3 Code](https://github.com/pingdotgg/t3code) (`apps/web`, commit `be7d35aae`) and remains under the **MIT License**, Copyright (c) 2026 T3 Tools Inc. The license text, the list of files and the changes are kept in that folder: [LICENSE](frontend/src/t3code/LICENSE), [README](frontend/src/t3code/README.md). No T3 Code names, logos, icons or interface texts are used. The direct frontend dependencies added with it are under MIT, Apache-2.0 or ISC.
+- **Dependencies** are not copied into this repository. They are installed from PyPI and npm and keep their own licenses. The direct dependencies listed in `backend/pyproject.toml` and `frontend/package.json` are under MIT, Apache-2.0, BSD-3-Clause or ISC. Transitive ones include other permissive licenses, such as MPL-2.0 (`certifi` in the backend, `lightningcss` in the frontend build), PSF-2.0 (`typing_extensions`), and BlueOak-1.0.0 and Python-2.0 (frontend development tools such as `lru-cache` and `argparse`).
+- **PostgreSQL and pgvector** are used as the database and are under the PostgreSQL License. They are not part of this repository: Docker Compose pulls the `pgvector/pgvector` image, and local development and the tests use the `pixeltable-pgserver` package, a development-only dependency. The package itself is under Apache-2.0; its Linux wheel bundles binaries of PostgreSQL and pgvector. The wheel's component list (`auditwheel.cdx.json`) also names the `readline` and `ncurses-libs` system libraries, without license data; GNU Readline is distributed under the GPL. None of them is copied into this repository or into the Docker images.
 - **Docker base images** (`python`, `node`, `nginx`, `pgvector/pgvector`) are pulled at build time and keep their own licenses.
 - **The PDF files of the demo knowledge base** were generated with ReportLab (BSD license), which is not a dependency of the application. See the [knowledge base README](knowledge-base/northline/README.md).
 

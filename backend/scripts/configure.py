@@ -332,6 +332,8 @@ def main() -> int:
             print("Created .env with demo settings and an admin token.")
         else:
             print(".env already exists; left unchanged.")
+        port = read_env_values(ENV_PATH.read_text(encoding="utf-8")).get("FRONTEND_PORT") or "5173"
+        print(f"Next: run `make dev`, then open http://localhost:{port}")
         return 0
     try:
         return configure()
