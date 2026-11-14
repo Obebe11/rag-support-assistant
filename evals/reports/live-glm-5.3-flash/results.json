@@ -4,7 +4,7 @@
     "started_at": "2026-11-14T11:35:56+00:00",
     "finished_at": "2026-11-14T11:41:12+00:00",
     "command": "python -m scripts.run_evals --output-dir ../evals/reports/live-glm-5.3-flash --judge",
-    "git_commit": "4b914195619be22540393bb219061e94c36180ac",
+    "git_commit": "dfca0b51d42228d469d9702f2335363a76b925b9",
     "git_dirty": true,
     "providers": {
       "llm": {

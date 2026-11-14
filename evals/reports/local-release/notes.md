@@ -1,6 +1,6 @@
 ### What this run is
 
-The 40 cases in the local demo modes on the release code: commit `32d8256`, with a clean working tree, run with `LLM_PROVIDER=local EMBEDDING_PROVIDER=local CRM_PROVIDER=simulated` in the environment. It repeats [`local-after-integration`](../local-after-integration/report.md) after every change since then, so that the current numbers come from a run of the current code.
+The 40 cases in the local demo modes on the release code: commit `efc8036`, with a clean working tree, run with `LLM_PROVIDER=local EMBEDDING_PROVIDER=local CRM_PROVIDER=simulated` in the environment. It repeats [`local-after-integration`](../local-after-integration/report.md) after every change since then, so that the current numbers come from a run of the current code.
 
 ### What changed against local-after-integration
 

@@ -2,7 +2,7 @@
 
 - Run: 2026-11-12T03:20:43+00:00 to 2026-11-12T03:20:45+00:00 (UTC), all 40 cases, 50 turns.
 - Command: `python -m scripts.run_evals --output-dir ../evals/reports/local-after-integration`
-- Source: commit `6ac78d6261ee8d814c3e28ecba2530b7d47dfbcf with uncommitted changes`.
+- Source: commit `3fd6f1df36996dbd880606ab0c3658530a3dd8e2 with uncommitted changes`.
 - Verdict digest: `3a248a3ff3d8ef1fbe58f4d452ed0e8c7fd1cf10c63e92e551f3147c941fc70b`. Two runs with the same digest gave the same replies, citations, retrieval results and check outcomes.
 - Machine-readable results: [`results.json`](results.json).
 

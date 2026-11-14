@@ -2,7 +2,7 @@
 
 - Run: 2026-11-11T23:04:09+00:00 to 2026-11-11T23:04:11+00:00 (UTC), all 40 cases, 50 turns.
 - Command: `python -m scripts.run_evals --output-dir ../evals/reports/local-baseline`
-- Source: commit `1169e23bd6f1d51ca834caa5d942ad7cc6c76d53`.
+- Source: commit `daf1d6d9e929e91974e46d58304544767c247e87`.
 - Verdict digest: `5219ab9fa26060bca57e96253631ef57f9efc33f868f6c45a3e4e41e80c36db7`. Two runs with the same digest gave the same replies, citations, retrieval results and check outcomes.
 - Machine-readable results: [`results.json`](results.json).
 

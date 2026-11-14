@@ -4,7 +4,7 @@
     "started_at": "2026-11-12T03:20:43+00:00",
     "finished_at": "2026-11-12T03:20:45+00:00",
     "command": "python -m scripts.run_evals --output-dir ../evals/reports/local-after-integration",
-    "git_commit": "6ac78d6261ee8d814c3e28ecba2530b7d47dfbcf",
+    "git_commit": "3fd6f1df36996dbd880606ab0c3658530a3dd8e2",
     "git_dirty": true,
     "providers": {
       "llm": {

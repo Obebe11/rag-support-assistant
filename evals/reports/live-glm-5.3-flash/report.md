@@ -2,7 +2,7 @@
 
 - Run: 2026-11-14T11:35:56+00:00 to 2026-11-14T11:41:12+00:00 (UTC), all 40 cases, 50 turns.
 - Command: `python -m scripts.run_evals --output-dir ../evals/reports/live-glm-5.3-flash --judge`
-- Source: commit `4b914195619be22540393bb219061e94c36180ac with uncommitted changes`.
+- Source: commit `dfca0b51d42228d469d9702f2335363a76b925b9 with uncommitted changes`.
 - Verdict digest: `d01477e3eb9a56e9fed698596384b99b39754c0724da527368e1f8ca8d7a4b0a`. Two runs with the same digest gave the same replies, citations, retrieval results and check outcomes.
 - Machine-readable results: [`results.json`](results.json).
 
@@ -214,7 +214,7 @@ Written by a person or an agent after the run (`notes.md`); not generated from t
 
 The first run of the 40 cases with a live LLM and a live embedding model: `z-ai/glm-5.3-flash` for the replies and `amazon/titan-embed-text-v2` for the search, both through OpenRouter, with `LLM_REASONING_EFFORT=low`. The LLM judge was on and used the same model. It is one run; a second run with the same settings can give different replies, because the model output is not fixed.
 
-The code is commit `4b91419`, the change that makes a clarifying question or a knowledge gap cite the documented facts it names. The report says "with uncommitted changes": at run time the working tree also had two text edits in `README.md` and `evals/README.md`, and no code change. No threshold, pattern, prompt or case was changed after the run.
+The code is commit `dfca0b5`, the change that makes a clarifying question or a knowledge gap cite the documented facts it names. The report says "with uncommitted changes": at run time the working tree also had two text edits in `README.md` and `evals/README.md`, and no code change. No threshold, pattern, prompt or case was changed after the run.
 
 Prices per token were not configured for this run, so the report gives tokens and no cost.
 

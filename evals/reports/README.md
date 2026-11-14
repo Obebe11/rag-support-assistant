@@ -6,7 +6,7 @@ Each folder here is one run of the [evaluation cases](../README.md) that was kep
 | --- | --- | --- |
 | [`local-baseline/`](local-baseline/report.md) | LLM `local`, embeddings `local` (no API calls) | The system before any fix prompted by the evaluation. Includes a review of every open check by an AI coding agent. |
 | [`local-after-integration/`](local-after-integration/report.md) | LLM `local`, embeddings `local` (no API calls) | The same cases after the chat learned to answer a question inside a purchase request before it offers the inquiry. One reply of 50 changed; the notes in the report compare the two runs. |
-| [`local-release/`](local-release/report.md) | LLM `local`, embeddings `local` (no API calls) | The current run in the local modes, on the release code (commit `32d8256`, clean working tree). Same verdict digest as `local-after-integration`; the review verdicts were carried over by an AI coding agent. |
+| [`local-release/`](local-release/report.md) | LLM `local`, embeddings `local` (no API calls) | The current run in the local modes, on the release code (commit `efc8036`, clean working tree). Same verdict digest as `local-after-integration`; the review verdicts were carried over by an AI coding agent. |
 | [`live-glm-5.3-flash/`](live-glm-5.3-flash/report.md) | LLM `z-ai/glm-5.3-flash`, embeddings `amazon/titan-embed-text-v2` (live, through OpenRouter), LLM judge on | The first run with a live LLM and live embeddings, after clarifying questions and knowledge gaps started to cite the facts they name. Includes a review of every open check by an AI coding agent. |
 
 ## Changes after the baseline

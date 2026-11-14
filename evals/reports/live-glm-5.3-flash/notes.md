@@ -2,7 +2,7 @@
 
 The first run of the 40 cases with a live LLM and a live embedding model: `z-ai/glm-5.3-flash` for the replies and `amazon/titan-embed-text-v2` for the search, both through OpenRouter, with `LLM_REASONING_EFFORT=low`. The LLM judge was on and used the same model. It is one run; a second run with the same settings can give different replies, because the model output is not fixed.
 
-The code is commit `4b91419`, the change that makes a clarifying question or a knowledge gap cite the documented facts it names. The report says "with uncommitted changes": at run time the working tree also had two text edits in `README.md` and `evals/README.md`, and no code change. No threshold, pattern, prompt or case was changed after the run.
+The code is commit `dfca0b5`, the change that makes a clarifying question or a knowledge gap cite the documented facts it names. The report says "with uncommitted changes": at run time the working tree also had two text edits in `README.md` and `evals/README.md`, and no code change. No threshold, pattern, prompt or case was changed after the run.
 
 Prices per token were not configured for this run, so the report gives tokens and no cost.
 

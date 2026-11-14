@@ -4,7 +4,7 @@
     "started_at": "2026-11-14T17:06:40+00:00",
     "finished_at": "2026-11-14T17:06:43+00:00",
     "command": "python -m scripts.run_evals --output-dir ../evals/reports/local-release",
-    "git_commit": "32d82567f40394f9d65d11b6446609a962156b8d",
+    "git_commit": "efc803666f9de35f3eafecb2657fa8b36a81799d",
     "git_dirty": false,
     "providers": {
       "llm": {

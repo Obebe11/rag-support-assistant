@@ -2,7 +2,7 @@
 
 - Run: 2026-11-14T17:06:40+00:00 to 2026-11-14T17:06:43+00:00 (UTC), all 40 cases, 50 turns.
 - Command: `python -m scripts.run_evals --output-dir ../evals/reports/local-release`
-- Source: commit `32d82567f40394f9d65d11b6446609a962156b8d`.
+- Source: commit `efc803666f9de35f3eafecb2657fa8b36a81799d`.
 - Verdict digest: `3a248a3ff3d8ef1fbe58f4d452ed0e8c7fd1cf10c63e92e551f3147c941fc70b`. Two runs with the same digest gave the same replies, citations, retrieval results and check outcomes.
 - Machine-readable results: [`results.json`](results.json).
 
@@ -454,7 +454,7 @@ Written by a person or an agent after the run (`notes.md`); not generated from t
 
 ### What this run is
 
-The 40 cases in the local demo modes on the release code: commit `32d8256`, with a clean working tree, run with `LLM_PROVIDER=local EMBEDDING_PROVIDER=local CRM_PROVIDER=simulated` in the environment. It repeats [`local-after-integration`](../local-after-integration/report.md) after every change since then, so that the current numbers come from a run of the current code.
+The 40 cases in the local demo modes on the release code: commit `efc8036`, with a clean working tree, run with `LLM_PROVIDER=local EMBEDDING_PROVIDER=local CRM_PROVIDER=simulated` in the environment. It repeats [`local-after-integration`](../local-after-integration/report.md) after every change since then, so that the current numbers come from a run of the current code.
 
 ### What changed against local-after-integration
 
