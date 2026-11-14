@@ -1,4 +1,4 @@
-import { CircleAlertIcon } from "lucide-react";
+import { ChevronRightIcon, CircleAlertIcon } from "lucide-react";
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
@@ -97,8 +97,9 @@ function Delivery({ inquiry, onOpenLog }: { inquiry: InquiryRead; onOpenLog: (in
           {delivery.last_error}
         </p>
       ) : null}
-      <Button variant="ghost" size="xs" className="-ml-1.5" onClick={() => onOpenLog(inquiry)}>
+      <Button variant="link" size="xs" className="-ml-1 gap-0.5 px-1 text-primary" onClick={() => onOpenLog(inquiry)}>
         Delivery log <span className="sr-only">for {inquiry.contact.name ?? kindLabel(inquiry)}</span>
+        <ChevronRightIcon aria-hidden />
       </Button>
     </div>
   );
