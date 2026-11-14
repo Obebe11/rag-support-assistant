@@ -28,11 +28,14 @@ def _embeddings(
     )
 
 
-def _llm(handler: Handler, api_key: str | None = "llm-key") -> OpenAICompatibleLLMProvider:
+def _llm(
+    handler: Handler, api_key: str | None = "llm-key", reasoning_effort: str | None = None
+) -> OpenAICompatibleLLMProvider:
     return OpenAICompatibleLLMProvider(
         base_url="https://llm.example.com/v1",
         api_key=SecretStr(api_key) if api_key else None,
         model="example-chat-model",
+        reasoning_effort=reasoning_effort,
         transport=httpx.MockTransport(handler),
     )
 
@@ -188,6 +191,30 @@ async def test_llm_request_omits_optional_parameters_and_usage_may_be_missing() 
         "example-chat-model",
         None,
     )
+
+
+async def test_llm_request_sends_the_configured_reasoning_effort() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert json.loads(request.content)["reasoning_effort"] == "low"
+        return httpx.Response(200, json={"choices": [{"message": {"content": "Hello."}}]})
+
+    response = await _llm(handler, reasoning_effort="low").complete([ChatMessage("user", "Hi")])
+
+    assert response.text == "Hello."
+
+
+async def test_a_reply_cut_off_by_the_token_limit_names_the_fix() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": ""}, "finish_reason": "length"}]},
+        )
+
+    with pytest.raises(ProviderError) as error:
+        await _llm(handler).complete([ChatMessage("user", "Hi")], max_output_tokens=10)
+
+    assert "LLM_REASONING_EFFORT" in str(error.value)
+    assert error.value.retryable is False
 
 
 @pytest.mark.parametrize(

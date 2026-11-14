@@ -20,14 +20,12 @@ import json
 from pathlib import Path
 
 from app.api.errors import ApiError
-from app.core.config import REPO_ROOT, Settings
+from app.core.config import Settings
 from app.core.db import create_engine, create_session_factory
 from app.providers.factory import build_embedding_provider
 from app.services.documents.indexing import IndexingFailedError
 from app.services.documents.seeding import ManifestError, SeedResult, seed_manifest
-from scripts.dev import DevSettings, database, migrate
-
-DEFAULT_MANIFEST = REPO_ROOT / "knowledge-base" / "northline" / "manifest.json"
+from scripts.dev import DEMO_MANIFEST, DevSettings, database, migrate
 
 
 async def seed(settings: Settings, manifest_path: Path) -> list[SeedResult]:
@@ -47,7 +45,7 @@ async def seed(settings: Settings, manifest_path: Path) -> list[SeedResult]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--manifest", type=Path, default=DEMO_MANIFEST)
     parser.add_argument("--map-file", type=Path, help="Write doc_id to document ID as JSON.")
     arguments = parser.parse_args()
     manifest_path: Path = arguments.manifest.resolve()

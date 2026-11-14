@@ -14,7 +14,14 @@ from app.core.config import Settings
 from app.core.db import SessionFactory
 from app.models import Chunk, Document
 from app.providers.embeddings.local import MODEL_NAME, LocalEmbeddingProvider
-from app.services.documents.seeding import ManifestError, load_manifest, seed_manifest
+from app.services.documents.seeding import (
+    ManifestError,
+    count_documents,
+    load_manifest,
+    reindex_versions,
+    seed_manifest,
+    versions_without_model,
+)
 from tests.kb import NORTHLINE, REPLACEMENT_TEST, ask
 
 MAX_BYTES = 10 * 1024 * 1024
@@ -153,6 +160,37 @@ async def test_documents_are_indexed_again_for_a_new_embedding_model(
         models = (await session.execute(select(Chunk.embedding_model).distinct())).scalars().all()
     assert MODEL_NAME != "another-embedding-model"
     assert models == ["another-embedding-model"]
+
+
+async def test_every_active_document_is_brought_to_a_new_embedding_model(
+    client: httpx.AsyncClient,
+    admin_headers: dict[str, str],
+    session_factory: SessionFactory,
+    tmp_path: Path,
+) -> None:
+    seeded = await seed_manifest(
+        session_factory,
+        LocalEmbeddingProvider(),
+        _small_corpus(tmp_path),
+        max_upload_bytes=MAX_BYTES,
+    )
+    await client.delete(f"/api/admin/documents/{seeded[0].document_id}", headers=admin_headers)
+    other = _OtherModel()
+
+    stale = await versions_without_model(session_factory, other.model_name)
+    await reindex_versions(session_factory, other, stale)
+
+    # The deleted document is neither counted nor indexed, and nothing is left to do.
+    assert await count_documents(session_factory) == 1
+    assert len(stale) == 1
+    assert await versions_without_model(session_factory, other.model_name) == []
+    async with session_factory() as session:
+        indexed = (
+            await session.execute(
+                select(Chunk.embedding_model).where(Chunk.document_version_id == stale[0])
+            )
+        ).scalars()
+        assert set(indexed) == {"another-embedding-model"}
 
 
 async def test_a_deleted_document_is_created_again(

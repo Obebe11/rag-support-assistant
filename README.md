@@ -24,10 +24,10 @@ Version 1. The scenario above works end to end in the demo modes and is covered 
 | Purchase inquiries and human handoff: draft, preview, confirmation, delivery, retries | Works with the simulated CRM. The HubSpot provider is tested against an in-memory fake of the HubSpot API only. |
 | Visitor chat and admin page | Work. Checked in a browser on a real backend at 390 by 844 and 1440 by 1000 pixels. |
 
-**Not verified.** No API key and no Docker host were available, so these have never been run:
+**Checked once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: the demo documents were indexed, and three questions got a cited answer, a reply that the documents do not say, and an answer followed by an inquiry offer. The evaluation has not been run with a live LLM.
 
-- a live LLM (`LLM_PROVIDER=openai_compatible`);
-- a live embedding model (`EMBEDDING_PROVIDER=openai_compatible`);
+**Not verified.** No HubSpot account and no Docker host were available, so these have never been run:
+
 - a live HubSpot account (`CRM_PROVIDER=hubspot`);
 - the Docker Compose stack.
 
@@ -38,12 +38,13 @@ Version 1. The scenario above works end to end in the demo modes and is covered 
 Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), Node.js 22 or later, [pnpm](https://pnpm.io/), GNU Make. Linux or macOS on x86-64 or ARM64. No Docker, no system PostgreSQL and no API key are needed.
 
 ```
-make setup    # install backend and frontend dependencies
-make seed     # load the demo knowledge base (Northline Office Equipment)
-make dev      # database, migrations, API, worker and frontend
+make setup    # install the dependencies and create .env with demo settings
+make dev      # database, API, worker and frontend; loads the demo documents on the first run
 ```
 
-Open `http://localhost:5173`. The API docs are at `http://localhost:8000/api/docs`. `make dev` starts an embedded PostgreSQL with pgvector in `.local/postgres`. Change the ports with `FRONTEND_PORT` and `BACKEND_PORT`.
+Open `http://localhost:5173`. The API docs are at `http://localhost:8000/api/docs`. `make dev` starts an embedded PostgreSQL with pgvector in `.local/postgres` and, while the knowledge base is empty, loads the demo documents of Northline Office Equipment. Change the ports with `FRONTEND_PORT` and `BACKEND_PORT`.
+
+To use your own API key, run `make configure` and restart `make dev`. See [Live LLM and embeddings](#live-llm-and-embeddings).
 
 Things to try:
 
@@ -55,25 +56,36 @@ Things to try:
 Other commands:
 
 ```
-make check    # linters, type checks, tests and the frontend build
-make smoke    # the scenario above over HTTP, on an isolated database, in the demo modes
-make eval     # the 40 evaluation cases on an isolated database
-make openapi  # regenerate docs/openapi.json and the frontend API types
+make configure  # choose the LLM, embeddings and CRM, enter the keys and check them
+make seed       # load the demo documents again, for example after editing them
+make check      # linters, type checks, tests and the frontend build
+make smoke      # the scenario above over HTTP, on an isolated database, in the demo modes
+make eval       # the 40 evaluation cases on an isolated database
+make openapi    # regenerate docs/openapi.json and the frontend API types
 ```
 
 ### Admin page
 
-Set `ADMIN_API_TOKEN` in `.env` (copy `.env.example` first), restart `make dev` and open `http://localhost:5173/admin`. The token is sent as a bearer token and kept in the memory of the page only. While the variable is unset, every request under `/api/admin` is rejected.
+Open `http://localhost:5173/admin` and enter the value of `ADMIN_API_TOKEN` from `.env`. `make setup` puts a random token there; `make configure` prints it. The token is sent as a bearer token and kept in the memory of the page only. While the variable is unset, every request under `/api/admin` is rejected.
 
 ### Live LLM and embeddings
 
-Any API that implements OpenAI-style chat completions and embeddings can be used. In `.env`:
+Any API that implements OpenAI-style chat completions and embeddings can be used. The simplest way is:
+
+```
+make configure
+```
+
+It asks which API to use for the language model and for embeddings (demo mode, OpenAI, or another OpenAI-compatible API), reads each key without showing it, checks it with one small request and writes the answers to `.env`. Press Enter to keep a current value. With OpenAI, one key covers both, and the suggested models are `gpt-4.1-mini` and `text-embedding-3-small`.
+
+To edit `.env` by hand instead:
 
 ```
 LLM_PROVIDER=openai_compatible
 LLM_BASE_URL=...
 LLM_API_KEY=...
 LLM_MODEL=...
+LLM_REASONING_EFFORT=
 
 EMBEDDING_PROVIDER=openai_compatible
 EMBEDDING_BASE_URL=...
@@ -81,11 +93,11 @@ EMBEDDING_API_KEY=...
 EMBEDDING_MODEL=...
 ```
 
-Run `make seed` again after changing the embedding model: stored vectors of another model are not searched, and the command indexes the documents again. The two providers are independent, so one can stay local. This path has not been run against a live API.
+`LLM_REASONING_EFFORT` is optional and only for reasoning models: `low` makes replies faster. The app sets no output token limit, so a reasoning model does not run out of tokens before its reply. Restart `make dev` after a change. When the embedding model changes, `make dev` indexes every document again before it starts, uploads included: stored vectors of another model are not searched. The two providers are independent, so one can stay local.
 
 ### HubSpot
 
-Set `CRM_PROVIDER=hubspot` and `HUBSPOT_ACCESS_TOKEN`. A confirmed inquiry becomes a contact (found or created by email) with a note. The required scopes, the error handling, the limits and a step-by-step live check are in [docs/inquiries.md](docs/inquiries.md#hubspot). This path has not been run against a live account.
+Run `make configure` and answer yes to HubSpot, or set `CRM_PROVIDER=hubspot` and `HUBSPOT_ACCESS_TOKEN` in `.env`. A confirmed inquiry becomes a contact (found or created by email) with a note. The required scopes, the error handling, the limits and a step-by-step live check are in [docs/inquiries.md](docs/inquiries.md#hubspot). This path has not been run against a live account.
 
 ### Docker Compose
 

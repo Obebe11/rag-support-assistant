@@ -24,9 +24,11 @@ class OpenAICompatibleLLMProvider(LLMProvider):
         base_url: str,
         api_key: SecretStr | None,
         model: str,
+        reasoning_effort: str | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._model = model
+        self._reasoning_effort = reasoning_effort
         self._http = OpenAICompatibleClient(
             label="LLM", base_url=base_url, api_key=api_key, transport=transport
         )
@@ -39,6 +41,7 @@ class OpenAICompatibleLLMProvider(LLMProvider):
             base_url=settings.llm_base_url,
             api_key=settings.llm_api_key,
             model=settings.llm_model,
+            reasoning_effort=settings.llm_reasoning_effort,
         )
 
     @property
@@ -65,6 +68,8 @@ class OpenAICompatibleLLMProvider(LLMProvider):
             payload["max_tokens"] = max_output_tokens
         if json_output:
             payload["response_format"] = {"type": "json_object"}
+        if self._reasoning_effort is not None:
+            payload["reasoning_effort"] = self._reasoning_effort
         body = await self._http.post_json("chat/completions", payload)
 
         choices = body.get("choices")
@@ -72,6 +77,12 @@ class OpenAICompatibleLLMProvider(LLMProvider):
         message = first.get("message") if isinstance(first, dict) else None
         text = message.get("content") if isinstance(message, dict) else None
         if not isinstance(text, str) or not text.strip():
+            if isinstance(first, dict) and first.get("finish_reason") == "length":
+                # A reasoning model can spend the provider's output limit on reasoning.
+                raise self._http.malformed(
+                    "the reply hit the provider's output token limit before any text. For a "
+                    "reasoning model, set LLM_REASONING_EFFORT=low."
+                )
             raise self._http.malformed("the first choice has no text.")
         model = body.get("model")
         return LLMResponse(

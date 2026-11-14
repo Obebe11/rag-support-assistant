@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     llm_base_url: str | None = None
     llm_api_key: SecretStr | None = None
     llm_model: str | None = None
+    llm_reasoning_effort: str | None = Field(
+        default=None,
+        description="Sent as `reasoning_effort` when set, for example `low`, to make a "
+        "reasoning model reply faster. Models without reasoning may reject the parameter, "
+        "so leave it unset for them.",
+    )
 
     llm_input_price_per_million_tokens: float | None = Field(
         default=None,

@@ -31,9 +31,9 @@ from typing import Any
 import httpx
 
 from app.core.config import Settings
-from scripts.dev import BACKEND_DIR, migrate
+from scripts.dev import BACKEND_DIR, DEMO_MANIFEST, migrate
 from scripts.embedded_postgres import embedded_postgres
-from scripts.seed_knowledge_base import DEFAULT_MANIFEST, seed
+from scripts.seed_knowledge_base import seed
 
 STARTUP_TIMEOUT_SECONDS = 60.0
 DELIVERY_TIMEOUT_SECONDS = 60.0
@@ -401,7 +401,7 @@ def main() -> int:
         ):
             migrate(database_url)
             seeded = asyncio.run(
-                seed(Settings(database_url=database_url, **_mode_settings()), DEFAULT_MANIFEST)
+                seed(Settings(database_url=database_url, **_mode_settings()), DEMO_MANIFEST)
             )
             step(f"isolated database: migrations applied, {len(seeded)} documents indexed")
             with (

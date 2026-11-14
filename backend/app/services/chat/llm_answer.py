@@ -26,7 +26,6 @@ from app.services.chat.answering import (
     with_handoff_offer,
 )
 
-MAX_OUTPUT_TOKENS = 700
 MAX_CITATIONS = 4
 MAX_HISTORY_MESSAGE_CHARS = 1200
 
@@ -146,7 +145,6 @@ async def compose_llm_answer(
     response = await llm.complete(
         build_messages(question, history, passages),
         temperature=0.0,
-        max_output_tokens=MAX_OUTPUT_TOKENS,
         json_output=True,
     )
     elapsed_ms = round((time.perf_counter() - started) * 1000)

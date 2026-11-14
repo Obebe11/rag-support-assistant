@@ -59,7 +59,6 @@ logger = logging.getLogger(__name__)
 
 MAX_TURNS_FOR_LLM = 12
 MAX_TURN_CHARS = 1500
-LLM_MAX_OUTPUT_TOKENS = 400
 
 _FIELD_TYPES: Mapping[InquiryField, TypeAdapter[Any]] = {
     InquiryField.PRODUCT: TypeAdapter(Product),
@@ -84,11 +83,14 @@ Reply with one JSON object and nothing else:
             "contact_phone": string or null, "notes": string or null}}
 
 "purchase_intent" is true only when the latest visitor message:
-- asks to buy, order or get a quote, or
+- asks to buy, order or get a quote, or says the visitor wants or needs a quantity \
+of a product ("I want 12 printers", "We need 30 chairs"), even when the same \
+message also asks a question; the question is answered separately, or
 - supplies or corrects details of the inquiry draft shown below, or
 - agrees to the draft shown below.
-It is false for questions about policies, shipping, returns, warranty, service, \
-products or existing orders, even when they mention buying or ordering.
+It is false for a message that only asks about policies, shipping, returns, \
+warranty, service, products or existing orders, even when it mentions buying or \
+ordering ("How do I place an order?", "What is the warranty on the LP-420?").
 
 "fields": if a draft is shown, include only values the latest visitor message \
 states or corrects. If there is no draft, include the values the visitor stated \
@@ -256,7 +258,6 @@ class DraftingInquiryIntentDetector:
                     ChatMessage(role="user", content=_llm_input(turns, draft)),
                 ],
                 temperature=0.0,
-                max_output_tokens=LLM_MAX_OUTPUT_TOKENS,
                 json_output=True,
             )
         except ProviderError as exc:

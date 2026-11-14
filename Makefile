@@ -1,14 +1,18 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup dev db migrate seed eval smoke openapi check check-backend check-frontend
+.PHONY: help setup configure dev db migrate seed eval smoke openapi check check-backend check-frontend
 
 help: ## Show the available commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-16s %s\n", $$1, $$2}'
 
-setup: ## Install backend and frontend dependencies
+setup: ## Install dependencies and create .env with demo settings
 	cd backend && uv sync --locked
 	cd frontend && pnpm install --frozen-lockfile
+	cd backend && uv run python -m scripts.configure --init
 
-dev: ## Run the database, migrations, API, worker and frontend
+configure: ## Choose the LLM, embeddings and CRM, enter the keys and check them
+	cd backend && uv run python -m scripts.configure
+
+dev: ## Run everything; loads the demo documents into an empty knowledge base
 	cd backend && uv run python -m scripts.dev up
 
 db: ## Run only the embedded PostgreSQL and print its DATABASE_URL

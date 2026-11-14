@@ -7,6 +7,9 @@ titles are unique within a manifest, and a replacement keeps the title while
 the file name may change. `seed_manifest` returns the `doc_id` of every entry
 with the ID of its stored document.
 
+`versions_without_model` and `reindex_versions` bring a knowledge base that
+already holds documents, uploads included, to a new embedding model.
+
 Indexing runs in this process through the same function the worker uses, so
 seeding needs no running worker and returns when every document is searchable.
 """
@@ -21,7 +24,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.core.db import SessionFactory
-from app.models import Chunk, Document
+from app.models import Chunk, Document, DocumentVersion
 from app.models.enums import IndexingStatus
 from app.providers.embeddings.base import EmbeddingProvider
 from app.services.documents.indexing import index_document_version
@@ -183,3 +186,60 @@ async def seed_manifest(
                 )
             )
     return results
+
+
+async def count_documents(session_factory: SessionFactory) -> int:
+    """Count the documents that are not deleted."""
+    async with session_factory() as session:
+        return (
+            await session.execute(
+                select(func.count()).select_from(Document).where(Document.deleted_at.is_(None))
+            )
+        ).scalar_one()
+
+
+async def versions_without_model(
+    session_factory: SessionFactory, embedding_model: str
+) -> list[uuid.UUID]:
+    """Active versions with no chunks of `embedding_model`, which retrieval cannot find."""
+    has_chunks = (
+        select(Chunk.id)
+        .where(
+            Chunk.document_version_id == DocumentVersion.id,
+            Chunk.embedding_model == embedding_model,
+        )
+        .exists()
+    )
+    async with session_factory() as session:
+        return list(
+            (
+                await session.execute(
+                    select(DocumentVersion.id)
+                    .join(Document, Document.id == DocumentVersion.document_id)
+                    .where(
+                        DocumentVersion.is_active,
+                        Document.deleted_at.is_(None),
+                        ~has_chunks,
+                    )
+                    .order_by(Document.created_at, Document.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+
+async def reindex_versions(
+    session_factory: SessionFactory,
+    embeddings: EmbeddingProvider,
+    version_ids: list[uuid.UUID],
+) -> None:
+    """Index versions with the current embedding model, one transaction each.
+
+    Raises `IndexingFailedError` on the first version that cannot be indexed;
+    the versions before it stay indexed.
+    """
+    for version_id in version_ids:
+        async with session_factory() as session:
+            await index_document_version(session, version_id, embeddings)
+            await session.commit()

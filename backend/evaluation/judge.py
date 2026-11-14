@@ -15,7 +15,6 @@ from app.providers.llm.base import ChatMessage, LLMProvider
 from app.services.chat.llm_answer import parse_reply
 from evaluation.scoring import FAIL, PASS
 
-MAX_OUTPUT_TOKENS = 200
 ERROR = "error"
 
 SYSTEM_PROMPT = """\
@@ -71,9 +70,7 @@ class Judge:
         ]
         self.usage.calls += 1
         try:
-            response = await self._llm.complete(
-                messages, temperature=0.0, max_output_tokens=MAX_OUTPUT_TOKENS, json_output=True
-            )
+            response = await self._llm.complete(messages, temperature=0.0, json_output=True)
             data = parse_reply(response.text)
         except ProviderError as exc:
             self.usage.errors += 1

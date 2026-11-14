@@ -214,6 +214,8 @@ Known limits of the local mode: it cannot paraphrase, compare or compute; it fin
 
 `make seed` loads `knowledge-base/northline/manifest.json` and returns when every document is searchable. It indexes in-process, so no worker has to run. The command is idempotent: an entry is matched to a stored document by its `title`, a file with a new checksum becomes a new version, and a document that is not searchable with the current embedding model is indexed again.
 
+`make dev` prepares the knowledge base before the servers start. An empty knowledge base gets the Northline documents, as from `make seed`. Otherwise every active version without chunks of the current embedding model is indexed again, uploads included, so a change of embedding model needs no extra command. A failure here is printed and does not stop the servers.
+
 A manifest entry maps to the stored document as follows: `title` → `documents.title`, `version` → `document_versions.version_label`, the file name of `path` → `source_filename`. `python -m scripts.seed_knowledge_base --map-file map.json` writes `doc_id` with the stored document ID for every entry, and `--manifest` loads another manifest of the same format, such as `evals/fixtures/manifest.json`.
 
 ## Evaluation
@@ -271,15 +273,16 @@ The component and scenario tests (`pnpm --dir frontend test`) run the same handl
 ## Development
 
 ```
-make setup    # install backend and frontend dependencies
-make dev      # database, migrations, API, worker, frontend
-make check    # ruff, mypy, pytest, frontend API types, lint, type check, tests, build
-make openapi  # regenerate docs/openapi.json and frontend/src/api/schema.d.ts
-make migrate  # apply migrations
-make seed     # load the Northline knowledge base (idempotent)
-make eval     # run the evaluation cases on an isolated database and write a report
-make smoke    # walk the demo scenario over HTTP on an isolated database (local and simulated modes)
-make db       # run only the embedded PostgreSQL and print its DATABASE_URL
+make setup      # install backend and frontend dependencies, create .env with demo settings
+make configure  # choose the providers, enter the keys and check them; writes .env
+make dev        # database, migrations, API, worker, frontend; prepares the knowledge base first
+make check      # ruff, mypy, pytest, frontend API types, lint, type check, tests, build
+make openapi    # regenerate docs/openapi.json and frontend/src/api/schema.d.ts
+make migrate    # apply migrations
+make seed       # load the Northline knowledge base (idempotent)
+make eval       # run the evaluation cases on an isolated database and write a report
+make smoke      # walk the demo scenario over HTTP on an isolated database (local and simulated modes)
+make db         # run only the embedded PostgreSQL and print its DATABASE_URL
 ```
 
 Without `DATABASE_URL`, `make dev` and the tests start an embedded PostgreSQL with pgvector from the `pixeltable-pgserver` development dependency, so no Docker, system PostgreSQL or root access is needed. Development data is kept in `.local/postgres`. Tests always run on real PostgreSQL with pgvector; set `TEST_DATABASE_URL` to use an existing disposable database instead of the embedded one.

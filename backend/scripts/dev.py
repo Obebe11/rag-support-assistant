@@ -1,6 +1,9 @@
 """Local development runner: `python -m scripts.dev [up|db|migrate]`.
 
 - `up` (default): database, migrations, API, worker and frontend dev server.
+  Before the servers start, it creates `.env` when it is missing, checks the
+  settings, loads the demo documents into an empty knowledge base, and indexes
+  the documents again after a change of embedding model.
 - `db`: only the embedded database; prints its URL and waits.
 - `migrate`: apply migrations and exit.
 
@@ -10,6 +13,7 @@ needed. Ports come from BACKEND_PORT and FRONTEND_PORT (environment or `.env`).
 """
 
 import argparse
+import asyncio
 import contextlib
 import os
 import signal
@@ -22,14 +26,29 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from pydantic import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.core.config import REPO_ROOT
+from app.api.errors import ApiError
+from app.core.config import REPO_ROOT, Settings
+from app.core.db import create_engine, create_session_factory
+from app.providers.errors import ProviderError
+from app.providers.factory import build_embedding_provider
+from app.services.documents.indexing import IndexingFailedError
+from app.services.documents.seeding import (
+    ManifestError,
+    count_documents,
+    reindex_versions,
+    seed_manifest,
+    versions_without_model,
+)
+from scripts.configure import ensure_env_file
 from scripts.embedded_postgres import embedded_postgres
 
 BACKEND_DIR = REPO_ROOT / "backend"
 FRONTEND_DIR = REPO_ROOT / "frontend"
 EMBEDDED_DATA_DIR = REPO_ROOT / ".local" / "postgres"
+DEMO_MANIFEST = REPO_ROOT / "knowledge-base" / "northline" / "manifest.json"
 
 
 class DevSettings(BaseSettings):
@@ -56,6 +75,58 @@ def migrate(database_url: str) -> None:
     config = Config(str(BACKEND_DIR / "alembic.ini"))
     config.attributes["database_url"] = database_url
     command.upgrade(config, "head")
+
+
+def load_settings(database_url: str) -> Settings | None:
+    """The application settings, or None after printing what is wrong with them."""
+    try:
+        return Settings(database_url=database_url)
+    except ValidationError as exc:
+        print("The settings in .env cannot be used:", flush=True)
+        for error in exc.errors():
+            print(f"  - {error['msg'].removeprefix('Value error, ')}", flush=True)
+        print("Run `make configure` to fix them.", flush=True)
+        return None
+
+
+async def _prepare_knowledge_base(settings: Settings) -> None:
+    engine = create_engine(settings.database_url)
+    embeddings = build_embedding_provider(settings)
+    session_factory = create_session_factory(engine)
+    try:
+        if await count_documents(session_factory) == 0:
+            print("The knowledge base is empty. Loading the demo documents...", flush=True)
+            results = await seed_manifest(
+                session_factory,
+                embeddings,
+                DEMO_MANIFEST,
+                max_upload_bytes=settings.max_upload_bytes,
+            )
+            print(f"Loaded {len(results)} demo documents.", flush=True)
+            return
+        stale = await versions_without_model(session_factory, embeddings.model_name)
+        if stale:
+            print(
+                f"Indexing {len(stale)} documents with the embedding model "
+                f"{embeddings.model_name}...",
+                flush=True,
+            )
+            # One request first: a wrong key or URL fails here and marks no document as failed.
+            await embeddings.embed_query("test")
+            await reindex_versions(session_factory, embeddings, stale)
+            print("The documents are indexed.", flush=True)
+    finally:
+        await embeddings.aclose()
+        await engine.dispose()
+
+
+def prepare_knowledge_base(settings: Settings) -> None:
+    """Make the documents searchable. A failure is reported and does not stop the stack."""
+    try:
+        asyncio.run(_prepare_knowledge_base(settings))
+    except (ManifestError, IndexingFailedError, ApiError, ProviderError) as exc:
+        print(f"The knowledge base is not ready: {exc}", flush=True)
+        print("Check the embedding settings with `make configure`.", flush=True)
 
 
 def stop_requested() -> threading.Event:
@@ -104,8 +175,11 @@ def run_stack(settings: DevSettings, database_url: str) -> int:
         for name, (argv, cwd) in commands.items()
     }
     print(
-        f"API: http://127.0.0.1:{settings.backend_port}/api/docs  "
-        f"Frontend: http://127.0.0.1:{settings.frontend_port}/  (Ctrl+C to stop)",
+        f"\nOpen http://localhost:{settings.frontend_port}/\n"
+        f"Admin: http://localhost:{settings.frontend_port}/admin "
+        "(the token is ADMIN_API_TOKEN in .env)\n"
+        f"API docs: http://localhost:{settings.backend_port}/api/docs\n"
+        "Press Ctrl+C to stop.\n",
         flush=True,
     )
     stop = stop_requested()
@@ -132,6 +206,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("action", nargs="?", default="up", choices=["up", "db", "migrate"])
     action: str = parser.parse_args().action
+    if action == "up" and ensure_env_file():
+        print("Created .env with demo settings and an admin token.", flush=True)
     settings = DevSettings()
     with database(settings) as database_url:
         if action == "db":
@@ -140,6 +216,10 @@ def main() -> int:
         migrate(database_url)
         if action == "migrate":
             return 0
+        app_settings = load_settings(database_url)
+        if app_settings is None:
+            return 1
+        prepare_knowledge_base(app_settings)
         return run_stack(settings, database_url)
 
 
