@@ -855,7 +855,7 @@ export interface components {
             answer_type?: components["schemas"]["AnswerType"] | null;
             /**
              * Citations
-             * @description Sources of a `grounded` answer. An `inquiry_offer` has them when the visitor's message also asked a question that the documents answer.
+             * @description Sources of a `grounded` answer. A `clarification` or `knowledge_gap` has them when it names documented facts, such as the options to choose from. An `inquiry_offer` has them when the visitor's message also asked a question that the documents answer.
              */
             citations?: components["schemas"]["Citation"][];
             /** Content */

@@ -25,9 +25,11 @@ class AnswerType(StrEnum):
     GROUNDED = "grounded"
     """The answer is supported by the knowledge base and carries citations."""
     KNOWLEDGE_GAP = "knowledge_gap"
-    """The documents do not answer the question; the assistant offers a human handoff."""
+    """The documents do not answer the question; the assistant offers a human handoff.
+    It carries citations when it names a related documented fact."""
     CLARIFICATION = "clarification"
-    """The assistant needs more detail before it can answer."""
+    """The assistant needs more detail before it can answer. It carries citations
+    when it names the documented options."""
     INQUIRY_OFFER = "inquiry_offer"
     """The visitor wants to buy; the assistant collects details or offers an inquiry draft."""
     REFUSAL = "refusal"

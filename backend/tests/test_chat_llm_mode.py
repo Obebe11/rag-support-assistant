@@ -19,6 +19,7 @@ from app.core.config import Settings
 from app.core.db import SessionFactory
 from app.models import Message
 from app.providers.llm.openai_compatible import OpenAICompatibleLLMProvider
+from app.services.chat.answering import CLARIFICATION_TEXT
 from app.services.chat.extractive import LOCAL_MODE_NOTICE
 from tests.kb import (
     EVAL_FIXTURES,
@@ -227,7 +228,7 @@ async def test_a_knowledge_gap_from_the_llm_always_offers_a_person(
     unknown_type = await ask(client, "Do you ship to Canada?")
 
     assert plain["answer_type"] == "knowledge_gap"
-    assert plain["citations"] == []
+    assert len(plain["citations"]) == 1
     assert plain["content"] == (
         "The documents do not say that. I can pass your question to a member of the team. "
         "Would you like a person to follow up?"
@@ -236,6 +237,73 @@ async def test_a_knowledge_gap_from_the_llm_always_offers_a_person(
         "The documents do not say. I can ask a colleague from the team to reply."
     )
     assert unknown_type["answer_type"] == "knowledge_gap"
+
+
+async def test_a_knowledge_gap_with_only_invalid_citations_states_no_fact(
+    client: httpx.AsyncClient, llm: _FakeLLM
+) -> None:
+    llm.reply = lambda _: llm.completion(
+        {
+            "answer_type": "knowledge_gap",
+            "answer": "The documents do not cover Canada, but parcels ship free over $500.",
+            "citations": [42],
+        }
+    )
+
+    reply = await ask(client, "Do you ship to Canada?")
+
+    assert reply["answer_type"] == "knowledge_gap"
+    assert reply["citations"] == []
+    assert "$500" not in reply["content"]
+    assert "Would you like a person to follow up" in reply["content"]
+    assert reply["usage"]["note"] == "The LLM gave a related fact without a valid citation."
+
+
+SHIPPING_OPTIONS = (
+    "It depends on the order: heavy orders ship by LTL freight, free from $2,500. "
+    "How heavy is your order?"
+)
+
+
+async def test_a_clarifying_question_shows_the_sources_of_the_options_it_names(
+    client: httpx.AsyncClient, llm: _FakeLLM
+) -> None:
+    section = "Freight shipping"
+    llm.reply = lambda payload: llm.completion(
+        {
+            "answer_type": "clarification",
+            "answer": SHIPPING_OPTIONS,
+            "citations": [llm.excerpt_number(payload, section), 99],
+        }
+    )
+
+    reply = await ask(client, "How much does shipping cost?")
+
+    assert (reply["answer_type"], reply["content"]) == ("clarification", SHIPPING_OPTIONS)
+    [citation] = reply["citations"]
+    assert (citation["document_title"], citation["version_label"]) == ("Shipping Policy", "3.0")
+    assert citation["section"] == section
+    assert "$2,500" in citation["excerpt"]
+    assert reply["usage"]["note"] is None
+
+
+@pytest.mark.parametrize("citations", [None, [], [42, "x"]])
+async def test_a_clarifying_question_without_a_valid_citation_states_no_fact(
+    client: httpx.AsyncClient, llm: _FakeLLM, citations: list[Any] | None
+) -> None:
+    content: dict[str, Any] = {"answer_type": "clarification", "answer": SHIPPING_OPTIONS}
+    if citations is not None:
+        content["citations"] = citations
+    llm.reply = lambda _: llm.completion(content)
+
+    reply = await ask(client, "How much does shipping cost?")
+
+    assert reply["answer_type"] == "clarification"
+    assert reply["content"] == CLARIFICATION_TEXT
+    assert reply["citations"] == []
+    assert reply["usage"]["note"] == (
+        "The LLM asked a clarifying question without a valid citation."
+    )
 
 
 PURCHASE_WITH_QUESTION = (
