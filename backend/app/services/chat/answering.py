@@ -17,17 +17,17 @@ ELLIPTICAL_TERMS = 2
 """A message with fewer content terms than this leans on the earlier messages."""
 
 KNOWLEDGE_GAP_TEXT = (
-    "I could not find an answer to that in the company's documents, and I do not want to "
-    "guess. I can pass your question to a member of the team. Would you like a person to "
-    "follow up with you?"
+    "I could not find an answer to that in the company's documents, and I do not want to guess."
 )
 HANDOFF_OFFER_TEXT = (
     "I can pass your question to a member of the team. Would you like a person to follow up?"
 )
+SIMULATED_HANDOFF_TEXT = (
+    "Delivery is simulated. You can try the handoff form, but no person will receive your request."
+)
 QUESTION_GAP_TEXT = (
     "I could not find an answer to your question in the company's documents, and I do not "
-    "want to guess. You can add the question to the notes of your inquiry, so the sales "
-    "team sees it."
+    "want to guess. You can add the question to the notes of your inquiry."
 )
 """A knowledge gap in a reply that also offers a purchase inquiry."""
 CLARIFICATION_TEXT = (
@@ -37,10 +37,6 @@ CLARIFICATION_TEXT = (
 REFUSAL_TEXT = (
     "I can't help with that request. I can answer questions about the company's products "
     "and policies from its documents, and help you prepare a purchase inquiry."
-)
-
-_HANDOFF_WORDS = re.compile(
-    r"\b(human|person|people|team|colleague|agent|representative|someone|staff)\b", re.IGNORECASE
 )
 
 
@@ -76,11 +72,6 @@ def is_elliptical(message: str) -> bool:
 
 def knowledge_gap(note: str | None = None) -> AnswerDraft:
     return AnswerDraft(AnswerType.KNOWLEDGE_GAP, KNOWLEDGE_GAP_TEXT, note=note)
-
-
-def with_handoff_offer(text: str) -> str:
-    """Make sure a knowledge-gap reply offers a human handoff."""
-    return text if _HANDOFF_WORDS.search(text) else f"{text.rstrip()} {HANDOFF_OFFER_TEXT}"
 
 
 def make_citation(passage: Passage, excerpt: str) -> Citation:

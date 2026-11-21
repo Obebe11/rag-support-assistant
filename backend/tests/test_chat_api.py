@@ -231,7 +231,7 @@ async def test_a_question_the_documents_do_not_answer_is_a_knowledge_gap_with_a_
     assert reply["answer_type"] == "knowledge_gap"
     assert reply["citations"] == []
     assert "could not find an answer" in reply["content"]
-    assert "Would you like a person to follow up" in reply["content"]
+    assert "no person will receive your request" in reply["content"]
     # Retrieval ran and found passages; their scores did not make the reply grounded.
     assert len(reply["usage"]["retrieved"]) > 0
 
@@ -466,7 +466,7 @@ async def test_a_hidden_comment_in_a_document_cannot_turn_a_gap_into_an_answer(
     drivers = await ask(client, "Which operating systems have drivers for the LP-420?")
 
     assert reply["answer_type"] == "knowledge_gap"
-    assert "Would you like a person to follow up" in reply["content"]
+    assert "no person will receive your request" in reply["content"]
     for answer in (reply, drivers):
         assert "northline-verify" not in answer["content"]
         assert "fully supported" not in answer["content"]
@@ -532,7 +532,7 @@ async def test_purchase_intent_from_the_inquiry_seam_becomes_an_inquiry_offer(
     assert offered["answer_type"] == "inquiry_offer"
     assert offered["citations"] == []
     assert offered["content"] == (
-        "I can prepare a purchase inquiry for the sales team. To complete it, please tell me "
+        "I can prepare a simulated purchase inquiry. To complete it, please tell me "
         "when you need it, your name and your email address."
     )
     inquiry = offered["inquiry"]
@@ -562,11 +562,11 @@ async def test_a_complete_draft_is_offered_for_confirmation(
     offered = await ask(client, "I would like a quote, all details are in my account.")
 
     assert offered["answer_type"] == "inquiry_offer"
-    assert "review the details and confirm" in offered["content"]
+    assert "You can confirm the details, but no one will receive the inquiry" in offered["content"]
 
 
 OFFER_TEXT = (
-    "I can prepare a purchase inquiry for the sales team. To complete it, please tell me "
+    "I can prepare a simulated purchase inquiry. To complete it, please tell me "
     "when you need it, your name and your email address."
 )
 
@@ -622,8 +622,7 @@ async def test_a_question_the_documents_do_not_answer_is_acknowledged_before_the
     assert reply["answer_type"] == "inquiry_offer"
     assert reply["content"] == (
         "I could not find an answer to your question in the company's documents, and I do "
-        "not want to guess. You can add the question to the notes of your inquiry, so the "
-        f"sales team sees it.\n\n{OFFER_TEXT}"
+        f"not want to guess. You can add the question to the notes of your inquiry.\n\n{OFFER_TEXT}"
     )
     assert reply["citations"] == []
     assert reply["inquiry"]["status"] == "draft"
@@ -710,7 +709,7 @@ async def test_the_application_detector_turns_a_purchase_request_into_a_draft(
     assert completed["answer_type"] == "inquiry_offer"
     assert completed["inquiry"]["id"] == offered["inquiry"]["id"]
     assert completed["inquiry"]["missing_fields"] == []
-    assert "review the details and confirm" in completed["content"]
+    assert "no one will receive the inquiry" in completed["content"]
     # The earlier message shows the draft as it is now.
     conversation = (await client.get(f"/api/conversations/{conversation_id}")).json()
     assert conversation["messages"][3]["inquiry"]["missing_fields"] == []

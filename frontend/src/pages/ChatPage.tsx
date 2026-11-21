@@ -26,8 +26,10 @@ import { useChatContext } from "../features/chat/ChatProvider";
 import { SourcesList } from "../features/chat/SourcesList";
 import { SourcesPanel } from "../features/chat/SourcesPanel";
 import type { Chat } from "../features/chat/useChat";
+import { inquiryTitle } from "../features/inquiry/InquiryPanel";
 import { InquiryThread } from "../features/inquiry/InquiryThread";
 import { restoredHandoffs } from "../features/inquiry/restoredHandoffs";
+import { useHealth } from "../hooks/useHealth";
 
 // Questions the demo knowledge base answers in every mode, including the keyless local one.
 const EXAMPLE_QUESTIONS = [
@@ -122,6 +124,8 @@ function RestoringRows() {
 }
 
 function ChatView({ chat }: { chat: Chat }) {
+  const { state: health } = useHealth();
+  const simulated = health.status === "ready" && !health.health.providers.crm.live;
   const sheetMode = useRightPanelSheetMode();
   const [panel, setPanel] = useState<PanelState>(CLOSED_PANEL);
   const [panelBody, setPanelBody] = useState<HTMLDivElement | null>(null);
@@ -212,7 +216,7 @@ function ChatView({ chat }: { chat: Chat }) {
 
   const tabs: RightPanelTab[] = [{ id: "sources", title: "Sources" }];
   if (panel.flow) {
-    tabs.push({ id: "inquiry", title: panel.flow.kind === "handoff" ? "Talk to a person" : "Inquiry" });
+    tabs.push({ id: "inquiry", title: panel.flow.kind === "handoff" ? inquiryTitle("handoff", simulated) : "Inquiry" });
   }
   const activeTab: PanelTab = panel.tab === "inquiry" && panel.flow ? "inquiry" : "sources";
 
@@ -281,6 +285,9 @@ function ChatView({ chat }: { chat: Chat }) {
         <PageHeader title="Support chat" reserveToggleSpace={!panelBesideChat} />
         <div className="relative flex min-h-0 flex-1 flex-col">
           <HealthBanner />
+          <p className="m-0 shrink-0 border-b border-border/60 px-3 py-2 text-center text-xs text-muted-foreground">
+            Northline is a fictional company.
+          </p>
           <TimelineViewport scrollRef={scrollRef} bottomInset={hero ? 0 : dockHeight} label="Conversation">
             {phase === "restoring" ? <RestoringRows /> : null}
             {phase === "restore_failed" ? (

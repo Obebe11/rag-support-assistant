@@ -13,10 +13,13 @@ import { crmAccessFailed, describeDemoModes } from "./demoModes";
 export function ModeBadge() {
   const { state } = useHealth();
   if (state.status !== "ready") return null;
-  const notes = describeDemoModes(state.health.providers);
+  const { providers } = state.health;
+  const notes = describeDemoModes(providers);
   const accessFailed = crmAccessFailed(state.health);
   if (notes.length === 0 && !accessFailed) return null;
-  const title = accessFailed ? "CRM access failed" : "Demo mode";
+  const answers = providers.llm.live ? "Live AI" : "Local answers";
+  const detail = !providers.crm.live ? "CRM simulated" : !providers.embeddings.live ? "Local search" : null;
+  const title = accessFailed ? "CRM access failed" : detail ? `${answers} · ${detail}` : answers;
 
   return (
     <Popover>

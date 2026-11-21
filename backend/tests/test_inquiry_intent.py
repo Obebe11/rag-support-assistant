@@ -69,6 +69,8 @@ PURCHASE_REQUESTS = [
     "Quote for 40 desk lamps please",
     "Can we order 10 filing cabinets?",
     "If I order 50 chairs, can I get a quote?",
+    "Can you quote a price for 20 LP-420 printers?",
+    "What's the price for the LP-420? Please send me a quote for 20 units.",
 ]
 
 
@@ -704,6 +706,31 @@ async def test_policy_question_opens_no_draft_with_a_live_llm(
 @pytest.mark.parametrize("message", PURCHASE_REQUESTS)
 def test_purchase_requests_are_never_vetoed_as_policy_questions(message: str) -> None:
     assert extraction.asks_about_policy(message) is False
+    assert extraction.asks_for_price_without_purchase(message) is False
+
+
+@pytest.mark.parametrize("draft_open", [False, True])
+async def test_price_lookup_skips_live_intent_and_does_not_create_or_edit_a_draft(
+    session_factory: SessionFactory, conversation_id: uuid.UUID, draft_open: bool
+) -> None:
+    llm = FakeLLM(_reply(True, product="LP-420", quantity=20)) if draft_open else FakeLLM()
+    detector = DraftingInquiryIntentDetector(llm)
+    message = "What\u2019s your price for the LP-420?"
+
+    if draft_open:
+        purchase = "I would like to buy 20 LP-420 printers."
+        assert (await _assess(session_factory, detector, conversation_id, purchase)).detected
+        result = await _assess(session_factory, detector, conversation_id, purchase, message)
+    else:
+        result = await _assess(session_factory, detector, conversation_id, message)
+
+    assert result == NO_INQUIRY_INTENT
+    drafts = await _inquiries(session_factory)
+    if draft_open:
+        (draft,) = drafts
+        assert (draft.product, draft.quantity) == ("LP-420", 20)
+    else:
+        assert drafts == []
 
 
 async def test_policy_question_with_a_live_llm_leaves_the_open_draft_untouched(

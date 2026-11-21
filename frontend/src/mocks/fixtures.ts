@@ -256,11 +256,12 @@ export const groundedWarrantyReply = (): MessageRead =>
     citations: warrantyCitations,
   });
 
-export const knowledgeGapReply = (): MessageRead =>
+export const knowledgeGapReply = (live = false): MessageRead =>
   assistantMessage({
     answer_type: "knowledge_gap",
-    content:
-      "I could not find an answer to that in the company's documents, and I do not want to guess. I can pass your question to a member of the team. Would you like a person to follow up with you?",
+    content: live
+      ? "I could not find an answer to that in the company's documents. Would you like a person to follow up?"
+      : "Delivery is simulated. You can try the handoff form, but no person will receive your request.\n\nI could not find an answer to that in the company's documents, and I do not want to guess.",
   });
 
 export const clarificationReply = (): MessageRead =>

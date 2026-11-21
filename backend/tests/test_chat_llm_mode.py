@@ -201,12 +201,12 @@ async def test_a_grounded_answer_without_a_valid_citation_becomes_a_knowledge_ga
     assert reply["answer_type"] == "knowledge_gap"
     assert reply["citations"] == []
     assert "90 days" not in reply["content"]
-    assert "Would you like a person to follow up" in reply["content"]
+    assert "no person will receive your request" in reply["content"]
     assert reply["usage"]["note"] == "The LLM gave an answer without a valid citation."
     assert (reply["usage"]["input_tokens"], reply["usage"]["output_tokens"]) == (812, 37)
 
 
-async def test_a_knowledge_gap_from_the_llm_always_offers_a_person(
+async def test_a_knowledge_gap_offers_only_a_simulated_handoff(
     client: httpx.AsyncClient, llm: _FakeLLM
 ) -> None:
     llm.reply = lambda _: llm.completion(
@@ -230,12 +230,11 @@ async def test_a_knowledge_gap_from_the_llm_always_offers_a_person(
     assert plain["answer_type"] == "knowledge_gap"
     assert len(plain["citations"]) == 1
     assert plain["content"] == (
-        "The documents do not say that. I can pass your question to a member of the team. "
-        "Would you like a person to follow up?"
+        "Delivery is simulated. You can try the handoff form, but no person will receive "
+        "your request.\n\nThe documents do not say that."
     )
-    assert with_offer["content"] == (
-        "The documents do not say. I can ask a colleague from the team to reply."
-    )
+    assert with_offer["content"].startswith("Delivery is simulated.")
+    assert "colleague" not in with_offer["content"]
     assert unknown_type["answer_type"] == "knowledge_gap"
 
 
@@ -255,7 +254,7 @@ async def test_a_knowledge_gap_with_only_invalid_citations_states_no_fact(
     assert reply["answer_type"] == "knowledge_gap"
     assert reply["citations"] == []
     assert "$500" not in reply["content"]
-    assert "Would you like a person to follow up" in reply["content"]
+    assert "no person will receive your request" in reply["content"]
     assert reply["usage"]["note"] == "The LLM gave a related fact without a valid citation."
 
 
@@ -310,7 +309,7 @@ PURCHASE_WITH_QUESTION = (
     "I would like to buy 12 LP-420 label printers. What is the restocking fee for an opened item?"
 )
 OFFER_TEXT = (
-    "I can prepare a purchase inquiry for the sales team. To complete it, please tell me "
+    "I can prepare a simulated purchase inquiry. To complete it, please tell me "
     "when you need it, your name and your email address."
 )
 
@@ -389,6 +388,25 @@ async def test_a_refusal_from_the_llm_is_stored_as_a_refusal(
 
     assert (reply["answer_type"], reply["content"]) == ("refusal", "I can't approve discounts.")
     assert reply["citations"] == []
+
+
+async def test_an_out_of_scope_refusal_has_no_handoff_or_inquiry(
+    client: httpx.AsyncClient, llm: _FakeLLM
+) -> None:
+    llm.reply = lambda _: llm.completion(
+        {
+            "answer_type": "refusal",
+            "answer": "This chat covers Northline support, not integrations for the demo.",
+            "citations": [1],
+        }
+    )
+
+    reply = await ask(client, "Can you integrate with Salesforce?")
+
+    assert reply["answer_type"] == "refusal"
+    assert "not integrations for the demo" in reply["content"]
+    assert reply["citations"] == []
+    assert reply["inquiry"] is None
 
 
 async def test_an_override_attempt_never_reaches_the_llm(

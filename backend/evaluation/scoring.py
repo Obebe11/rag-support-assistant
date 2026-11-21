@@ -42,7 +42,7 @@ _PERSON = re.compile(
 )
 _OFFER = re.compile(
     r"\b(?:pass|forward|hand|connect|refer|route|escalate|transfer|follow up|reach out|"
-    r"get back to you|contact you|put you in touch)\b",
+    r"get back to you|contact you|put you in touch|try the handoff form)\b",
     re.IGNORECASE,
 )
 
