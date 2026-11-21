@@ -14,7 +14,8 @@ describe("App routes", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Support chat" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2, name: "Ask about shipping, returns, or warranty" })).toBeVisible();
-    expect(await screen.findByRole("button", { name: "Demo mode" })).toBeVisible();
+    expect(screen.getByText("Northline is a fictional company.")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Local answers · CRM simulated" })).toBeVisible();
   });
 
   it("shows the admin sign-in at /admin and a way back to the chat", async () => {
@@ -24,7 +25,7 @@ describe("App routes", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Admin" })).toBeVisible();
     expect(await screen.findByLabelText("Admin token")).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to chat" })).toHaveAttribute("href", "/");
-    expect(await screen.findByRole("button", { name: "Demo mode" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Local answers · CRM simulated" })).toBeVisible();
   });
 
   it("shows a not-found page for unknown addresses", () => {
@@ -45,10 +46,19 @@ describe("Demo modes", () => {
     expect(await within(status).findByText("Simulated")).toBeVisible();
     expect(within(status).getAllByText("Local mode")).toHaveLength(2);
 
-    await user.click(await screen.findByRole("button", { name: "Demo mode" }));
+    await user.click(await screen.findByRole("button", { name: "Local answers · CRM simulated" }));
     expect(await screen.findByText("Local answer mode: no LLM is connected.")).toBeVisible();
     expect(screen.getByText("Local search mode: no embedding API is connected.")).toBeVisible();
     expect(screen.getByText("Simulated CRM: inquiries are not sent to a real CRM.")).toBeVisible();
+  });
+
+  it("distinguishes the live model from the simulated CRM", async () => {
+    setMockScenario({ health: "live-ai-simulated-crm" });
+    const { user } = renderApp("/");
+
+    await user.click(await screen.findByRole("button", { name: "Live AI · CRM simulated" }));
+    expect(await screen.findByText("Simulated CRM: inquiries are not sent to a real CRM.")).toBeVisible();
+    expect(screen.queryByText(/no LLM is connected/)).not.toBeInTheDocument();
   });
 
   it("shows no demo badge when every provider is live", async () => {
@@ -57,7 +67,7 @@ describe("Demo modes", () => {
 
     const status = await screen.findByRole("region", { name: "Demo status" });
     expect(await within(status).findByText("Connected")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Demo mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Live AI|Local answers|CRM simulated/ })).not.toBeInTheDocument();
   });
 
   it("reports an unreachable server and loads again on request", async () => {
@@ -66,12 +76,12 @@ describe("Demo modes", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Cannot reach the server");
-    expect(screen.queryByRole("button", { name: "Demo mode" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Live AI|Local answers|CRM simulated/ })).not.toBeInTheDocument();
 
     setMockScenario({ health: "demo" });
     await user.click(within(alert).getByRole("button", { name: "Try again" }));
 
-    expect(await screen.findByRole("button", { name: "Demo mode" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Local answers · CRM simulated" })).toBeVisible();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

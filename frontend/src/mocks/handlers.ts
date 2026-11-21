@@ -70,7 +70,7 @@ const DELIVERY_PLANS = {
 
 export interface MockScenario {
   /** What `GET /api/health` reports. `offline` fails every request at the network level. */
-  health: "demo" | "live" | "db-down" | "crm-failed" | "offline";
+  health: "demo" | "live" | "live-ai-simulated-crm" | "db-down" | "crm-failed" | "offline";
   /** How a confirmed inquiry is delivered. Each status request advances one step. */
   delivery: keyof typeof DELIVERY_PLANS;
   /**
@@ -287,7 +287,7 @@ function replyTo(content: string, conversationId: string): MessageRead {
   } else if (/which|what about|printer\??$/.test(text) || text.length < 12) {
     reply = clarificationReply();
   } else {
-    reply = knowledgeGapReply();
+    reply = knowledgeGapReply(crmIsLive());
   }
   return { ...reply, conversation_id: conversationId, created_at: now() };
 }
@@ -422,6 +422,10 @@ export const handlers = [
     const bodies: Record<Exclude<MockScenario["health"], "offline">, HealthResponse> = {
       demo: demoHealth,
       live: liveHealth,
+      "live-ai-simulated-crm": {
+        ...liveHealth,
+        providers: { ...liveHealth.providers, crm: demoHealth.providers.crm },
+      },
       "db-down": databaseDownHealth,
       "crm-failed": crmAccessFailedHealth,
     };

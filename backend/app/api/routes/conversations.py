@@ -7,6 +7,7 @@ from http import HTTPStatus
 from fastapi import APIRouter
 
 from app.api.deps import (
+    CRMProviderDep,
     EmbeddingProviderDep,
     InquiryIntentDetectorDep,
     LLMProviderDep,
@@ -52,6 +53,7 @@ async def create_message(
     llm: LLMProviderDep,
     embeddings: EmbeddingProviderDep,
     detector: InquiryIntentDetectorDep,
+    crm: CRMProviderDep,
 ) -> MessageExchange:
     """Store the visitor message and return the assistant's reply.
 
@@ -80,6 +82,7 @@ async def create_message(
             llm=llm,
             embeddings=embeddings,
             detector=detector,
+            crm_live=crm.live,
         )
     except ProviderError as exc:
         await session.rollback()

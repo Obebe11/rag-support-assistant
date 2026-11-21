@@ -86,6 +86,7 @@ _QUOTE_PATTERNS = [
         _I,
     ),
     re.compile(rf"\b{_QUOTE} for (?:{_NUMBER}|an?|the|some|your)\b", _I),
+    re.compile(r"\b(?:can|could|would|will) you (?:please )?quote\b", _I),
     re.compile(r"\b(?:quote|price) (?:me|us)\b", _I),
     re.compile(r"\b(?:request for quotation|rfq)\b", _I),
 ]
@@ -114,6 +115,7 @@ _POLICY_CORE = re.compile(
     r"exchanges?|exchanging|cancel(?:lation|ing|s)?)\b",
     _I,
 )
+_PRICE_LOOKUP = re.compile(r"\b(?:how much|prices?|pricing|costs?|msrp)\b", _I)
 _QUESTION_WORD = (
     r"(?:how|what|whats|what's|when|where|why|who|which|is|are|was|were|does|do|did|will|"
     r"should|has|have)"
@@ -327,6 +329,14 @@ def _states_intent(sentence: str) -> bool:
 
 def has_purchase_intent(text: str) -> bool:
     return any(_states_intent(sentence) for sentence in _sentences(_normalize(text)))
+
+
+def asks_for_price_without_purchase(text: str) -> bool:
+    """A price lookup is not a request to start or edit an inquiry."""
+    sentences = _sentences(_normalize(text))
+    return not any(_states_intent(sentence) for sentence in sentences) and any(
+        _is_question(sentence) and _PRICE_LOOKUP.search(sentence) for sentence in sentences
+    )
 
 
 def asks_about_policy(text: str) -> bool:

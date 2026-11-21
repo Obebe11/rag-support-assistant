@@ -222,7 +222,7 @@ async def test_a_deleted_document_is_not_cited_and_leaves_a_knowledge_gap(
     assert after["answer_type"] == "knowledge_gap"
     assert after["citations"] == []
     assert "15%" not in after["content"]
-    assert "Would you like a person to follow up" in after["content"]
+    assert "no person will receive your request" in after["content"]
     assert after["usage"]["retrieved"] == []
     assert await _search(client, admin_headers, RESTOCKING_FEE) == []
 

@@ -4,6 +4,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 
 import type { InquiryKind, InquiryRead } from "../../api/client";
+import { useHealth } from "../../hooks/useHealth";
 import { describeDelivery } from "./deliveryStatus";
 import type { DeliveryPhase } from "./deliveryStatus";
 import { FIELD_LABELS, REQUIRED_BY_KIND } from "./inquiryForm";
@@ -44,17 +45,14 @@ function summaryLine(flow: InquiryFlow): string {
 }
 
 /** The card in the timeline for one inquiry. It follows the flow, so the status is live. */
-function InquiryCard(props: { flow: InquiryFlow; started: boolean; onOpen: () => void }) {
+function InquiryCard(props: { flow: InquiryFlow; started: boolean; simulated: boolean; onOpen: () => void }) {
   const { flow } = props;
 
   if (flow.kind === "handoff" && !props.started) {
     return (
       <div className="mt-3 flex flex-col items-start gap-2.5 rounded-xl border border-border/60 bg-card/50 p-3">
-        <p className="m-0 text-sm leading-relaxed text-muted-foreground">
-          A person at Northline can answer this. You review your question before it is sent.
-        </p>
         <Button variant="outline" size="sm" onClick={props.onOpen}>
-          Talk to a person
+          {props.simulated ? "Try simulated handoff" : "Talk to a person"}
         </Button>
       </div>
     );
@@ -69,7 +67,9 @@ function InquiryCard(props: { flow: InquiryFlow; started: boolean; onOpen: () =>
     <div className="mt-3 flex flex-col items-start gap-2 rounded-xl border border-border/60 bg-card/50 p-3">
       <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-1">
         <h3 className="m-0 text-sm font-medium text-foreground">
-          {flow.kind === "handoff" ? "Question for the Northline team" : inquiryTitle(flow.kind)}
+          {flow.kind === "handoff" && !props.simulated
+            ? "Question for the Northline team"
+            : inquiryTitle(flow.kind, props.simulated)}
         </h3>
         <Badge variant={status.variant}>{status.label}</Badge>
       </div>
@@ -110,6 +110,8 @@ export function InquiryThread(props: {
   panelBody: HTMLElement | null;
   onOpen: () => void;
 }) {
+  const { state } = useHealth();
+  const simulated = state.status === "ready" && !state.health.providers.crm.live;
   const flow = useInquiryFlow({
     kind: props.kind,
     initialInquiry: props.initialInquiry,
@@ -119,7 +121,12 @@ export function InquiryThread(props: {
 
   return (
     <>
-      <InquiryCard flow={flow} started={props.started || flow.inquiry !== null} onOpen={props.onOpen} />
+      <InquiryCard
+        flow={flow}
+        started={props.started || flow.inquiry !== null}
+        simulated={simulated}
+        onOpen={props.onOpen}
+      />
       {props.active && props.panelBody ? createPortal(<InquiryPanel flow={flow} />, props.panelBody) : null}
     </>
   );

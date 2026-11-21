@@ -232,6 +232,7 @@ def test_a_knowledge_gap_must_offer_a_human_handoff() -> None:
     [
         ("I can pass your question to a member of the team.", True),
         ("Would you like me to connect you with a sales representative?", True),
+        ("You can try the handoff form, but no person will receive your request.", True),
         ("Our team is great.", False),
         ("I will pass on that question.", False),
     ],

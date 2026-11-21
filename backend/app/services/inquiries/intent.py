@@ -91,6 +91,8 @@ message also asks a question; the question is answered separately, or
 It is false for a message that only asks about policies, shipping, returns, \
 warranty, service, products or existing orders, even when it mentions buying or \
 ordering ("How do I place an order?", "What is the warranty on the LP-420?").
+A question about a published price ("What does the LP-420 cost?") is informational, \
+not a request for a personalized quote, and must not start or change a draft.
 
 "fields": if a draft is shown, include only values the latest visitor message \
 states or corrects. If there is no draft, include the values the visitor stated \
@@ -220,6 +222,8 @@ class DraftingInquiryIntentDetector:
 
     async def _read(self, turns: Sequence[ConversationTurn], draft: Inquiry | None) -> _Reading:
         message = turns[-1].content
+        if extraction.asks_for_price_without_purchase(message):
+            return _NOT_RELEVANT
         if self._llm.live:
             if draft is None and not extraction.might_concern_a_purchase(message):
                 # Not about buying at all: skip the LLM call, the chat answers the question.

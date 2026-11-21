@@ -45,8 +45,9 @@ const HINTS: Partial<Record<InquiryField, string>> = {
   timeline: "For example: within 4 weeks.",
 };
 
-export function inquiryTitle(kind: InquiryKind): string {
-  return kind === "handoff" ? "Talk to a person" : "Purchase inquiry";
+export function inquiryTitle(kind: InquiryKind, simulated = false): string {
+  if (kind === "purchase") return "Purchase inquiry";
+  return simulated ? "Simulated handoff" : "Talk to a person";
 }
 
 const noun = (kind: InquiryKind) => (kind === "handoff" ? "request" : "inquiry");
@@ -307,8 +308,7 @@ function DeliveryStatusView(props: { flow: InquiryFlow }) {
   );
 }
 
-const STEP_HEADING: Record<InquiryStep, (kind: InquiryKind) => string> = {
-  form: inquiryTitle,
+const STEP_HEADING: Record<Exclude<InquiryStep, "form">, (kind: InquiryKind) => string> = {
   preview: (kind) => `Review your ${noun(kind)}`,
   status: () => "Delivery status",
 };
@@ -325,6 +325,8 @@ const STEP_INTRO: Record<InquiryStep, (kind: InquiryKind) => string> = {
 /** The inquiry path in the side panel: details, review with explicit confirmation, delivery status. */
 export function InquiryPanel(props: { flow: InquiryFlow }) {
   const { flow } = props;
+  const { state } = useHealth();
+  const simulated = state.status === "ready" && !state.health.providers.crm.live;
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   const shownStepRef = useRef(flow.step);
@@ -346,9 +348,13 @@ export function InquiryPanel(props: { flow: InquiryFlow }) {
           tabIndex={-1}
           className="m-0 text-base font-medium text-foreground outline-none"
         >
-          {STEP_HEADING[flow.step](flow.kind)}
+          {flow.step === "form" ? inquiryTitle(flow.kind, simulated) : STEP_HEADING[flow.step](flow.kind)}
         </h2>
-        <p className="m-0 text-sm leading-relaxed text-muted-foreground">{STEP_INTRO[flow.step](flow.kind)}</p>
+        <p className="m-0 text-sm leading-relaxed text-muted-foreground">
+          {simulated && flow.step === "form"
+            ? "You can review this request, but no one will receive it."
+            : STEP_INTRO[flow.step](flow.kind)}
+        </p>
       </div>
       {flow.step === "form" ? <DetailsForm flow={flow} headingId={headingId} /> : null}
       {flow.step === "preview" ? <Preview flow={flow} /> : null}

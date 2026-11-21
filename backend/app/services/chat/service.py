@@ -39,8 +39,10 @@ from app.schemas.conversations import (
 )
 from app.schemas.inquiries import InquiryField
 from app.services.chat.answering import (
+    HANDOFF_OFFER_TEXT,
     QUESTION_GAP_TEXT,
     REFUSAL_TEXT,
+    SIMULATED_HANDOFF_TEXT,
     AnswerDraft,
     Passage,
     is_elliptical,
@@ -133,18 +135,24 @@ def _answered_exchanges(messages: Sequence[Message]) -> list[tuple[Message, Mess
     return exchanges
 
 
-def inquiry_offer_text(intent: InquiryIntent) -> str:
-    if not intent.missing_fields:
-        return (
-            "I have prepared your purchase inquiry. Please review the details and confirm "
-            "them, and I will send the inquiry to the sales team."
+def inquiry_offer_text(intent: InquiryIntent, *, crm_live: bool) -> str:
+    if crm_live:
+        introduction = "I can prepare a purchase inquiry for the sales team."
+        confirmation = (
+            "Please review the details and confirm them, and I will send the inquiry "
+            "to the sales team."
         )
+    else:
+        introduction = "I can prepare a simulated purchase inquiry."
+        confirmation = (
+            "Delivery is simulated. You can confirm the details, but no one will receive "
+            "the inquiry."
+        )
+    if not intent.missing_fields:
+        return f"I have prepared your purchase inquiry. {confirmation}"
     labels = [_FIELD_LABELS[field] for field in intent.missing_fields]
     listed = labels[0] if len(labels) == 1 else f"{', '.join(labels[:-1])} and {labels[-1]}"
-    return (
-        "I can prepare a purchase inquiry for the sales team. "
-        f"To complete it, please tell me {listed}."
-    )
+    return f"{introduction} To complete it, please tell me {listed}."
 
 
 async def _query_vector(embeddings: EmbeddingProvider, question: str, context: str) -> list[float]:
@@ -289,6 +297,7 @@ async def post_message(
     llm: LLMProvider,
     embeddings: EmbeddingProvider,
     detector: InquiryIntentDetector,
+    crm_live: bool,
 ) -> tuple[Message, Message]:
     """Store a visitor message and the assistant's reply. Commits both together.
 
@@ -312,8 +321,9 @@ async def post_message(
         turns.append(ConversationTurn(MessageRole.USER, content))
         intent = await detector.assess(session, conversation_id=conversation.id, turns=turns)
         if intent.detected:
+            offer = inquiry_offer_text(intent, crm_live=crm_live)
             reply = _Reply(
-                AnswerDraft(AnswerType.INQUIRY_OFFER, inquiry_offer_text(intent)),
+                AnswerDraft(AnswerType.INQUIRY_OFFER, offer),
                 inquiry_id=intent.inquiry_id,
             )
             if intent.question:
@@ -334,6 +344,14 @@ async def post_message(
                 question=content,
                 exchanges=_answered_exchanges(earlier),
             )
+
+    if reply.draft.answer_type is AnswerType.KNOWLEDGE_GAP:
+        text = (
+            f"{reply.draft.text} {HANDOFF_OFFER_TEXT}"
+            if crm_live
+            else f"{SIMULATED_HANDOFF_TEXT}\n\n{reply.draft.text}"
+        )
+        reply = replace(reply, draft=replace(reply.draft, text=text))
 
     usage = _usage(
         reply,

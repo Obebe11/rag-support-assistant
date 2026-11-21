@@ -369,19 +369,20 @@ describe("Human handoff", () => {
 
   async function openHandoff(user: UserEvent) {
     await ask(user, "Do you sell standing desks in walnut?");
-    await user.click(await within(conversation()).findByRole("button", { name: "Talk to a person" }));
+    await user.click(await within(conversation()).findByRole("button", { name: "Try simulated handoff" }));
     await screen.findByRole("tabpanel");
-    await panel().findByRole("heading", { name: "Talk to a person" });
+    await panel().findByRole("heading", { name: "Simulated handoff" });
   }
 
-  it("admits the knowledge gap and offers a person instead of an answer", async () => {
+  it("explains that no one receives a simulated handoff", async () => {
     const { user } = renderApp("/");
 
     await ask(user, "Do you sell standing desks in walnut?");
 
     const log = within(conversation());
     expect(await log.findByText(/I could not find an answer to that in the company's documents/)).toBeVisible();
-    expect(log.getByRole("button", { name: "Talk to a person" })).toBeVisible();
+    expect(log.getByText(/no person will receive your request/)).toBeVisible();
+    expect(log.getByRole("button", { name: "Try simulated handoff" })).toBeVisible();
     expect(log.queryByRole("region", { name: "Sources" })).not.toBeInTheDocument();
     // The panel stays closed until the visitor asks for a person.
     expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
@@ -398,7 +399,7 @@ describe("Human handoff", () => {
     expect(panel().queryByLabelText("Product")).not.toBeInTheDocument();
     expect(panel().queryByLabelText("Quantity")).not.toBeInTheDocument();
     expect(panel().queryByLabelText("Timeline")).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Talk to a person" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Simulated handoff" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("requires the question, the name and the email", async () => {
@@ -446,7 +447,7 @@ describe("Human handoff", () => {
 
     expect(await panel().findByText("Delivery simulated")).toBeVisible();
     expect(panel().getByText(/nobody receives this request/)).toBeVisible();
-    expect(within(conversation()).getByRole("heading", { name: "Question for the Northline team" })).toBeVisible();
+    expect(within(conversation()).getByRole("heading", { name: "Simulated handoff" })).toBeVisible();
     expect(within(conversation()).getByText("Delivery simulated")).toBeVisible();
   });
 
@@ -469,10 +470,10 @@ describe("Human handoff", () => {
 
     // The card of the request is back on the reply it was made from; no second offer.
     const log = within(conversation());
-    expect(await log.findByRole("heading", { name: "Question for the Northline team" })).toBeVisible();
+    expect(await log.findByRole("heading", { name: "Simulated handoff" })).toBeVisible();
     expect(log.getByText("Delivery simulated")).toBeVisible();
     expect(log.getByText("Do you sell standing desks in walnut?", { selector: "p" })).toBeVisible();
-    expect(log.queryByRole("button", { name: "Talk to a person" })).not.toBeInTheDocument();
+    expect(log.queryByRole("button", { name: "Try simulated handoff" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
 
     await user.click(log.getByRole("button", { name: "View delivery status" }));

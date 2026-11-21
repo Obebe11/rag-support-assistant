@@ -232,13 +232,17 @@ def scenario(api: Api, admin_token: str) -> None:
     check(not answer["usage"]["llm_live"], "The reply should be labeled as local mode.")
     step("question: grounded answer with a citation (document, version, excerpt)")
 
-    # 3. A question the documents do not answer: the gap is admitted, a person is offered.
+    # 3. A question the documents do not answer: offer a simulated handoff.
     question = "Do you offer on-site installation in Brazil?"
     gap = api.ask(conversation_id, question)
     check(gap["answer_type"] == "knowledge_gap", "The question should be a knowledge gap.", gap)
     check(gap["citations"] == [] and gap["inquiry"] is None, "A gap has no source and no inquiry.")
-    check("person" in gap["content"], "The gap reply should offer a person.", gap["content"])
-    step("unanswerable question: knowledge gap without citations, a person is offered")
+    check(
+        "Delivery is simulated" in gap["content"] and "no person will receive" in gap["content"],
+        "The gap reply should disclose simulated delivery and offer a handoff.",
+        gap["content"],
+    )
+    step("unanswerable question: knowledge gap without citations, simulated handoff offered")
 
     handoff = api.call(
         "POST",

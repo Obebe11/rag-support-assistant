@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from app.core.config import LLMProviderMode, Settings
 from app.providers import factory
 from app.providers.llm.base import ChatMessage, LLMProvider, LLMResponse, TokenUsage
+from app.services.chat.llm_answer import SYSTEM_PROMPT as CHAT_PROMPT
 from evaluation.cases import load_cases
 from evaluation.judge import SYSTEM_PROMPT as JUDGE_PROMPT
 from evaluation.report import REVIEW_FILE, ReviewFileError, render_report, write_outputs
@@ -285,7 +286,7 @@ class _ScriptedLLM(LLMProvider):
                 "yes",
             )
             reply: dict[str, Any] = {"answer": answer, "reason": "Scripted."}
-        elif system.startswith("You are the customer support assistant"):
+        elif system == CHAT_PROMPT:
             reply = {
                 "answer_type": "grounded",
                 "answer": "We refund the original payment method. It takes about a week.",
