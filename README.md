@@ -6,9 +6,14 @@ This repository is a working demo. The assistant answers visitor questions from 
 
 It is for people who evaluate or build this kind of assistant: the repository shows the whole path from a document upload to a CRM record, with the limits stated. The demo company, Northline Office Equipment, is fictional.
 
-<img src="docs/screenshots/chat-answer-with-sources.png" alt="The visitor chat at desktop width: the question &quot;How much does shipping cost?&quot; with a reply that quotes the FAQ, and the side panel showing the cited passage with its document, version and section." width="960">
+**For clients**
+- [Try the demo locally](#quick-start), no API keys needed.
+- [Read the live-model evaluation](evals/reports/live-glm-5.3-flash/report.md).
+- Contact: [obi4.xyz](https://obi4.xyz) · [Ivan_orlov_00@pm.me](mailto:Ivan_orlov_00@pm.me).
 
-Screenshot taken in the local demo mode: the reply is assembled from quotes of the documents, without a language model. See [Screenshots](#screenshots).
+<img src="docs/screenshots/chat-answer-with-sources.png" alt="The visitor chat at desktop width: the question &quot;How much does shipping cost?&quot; with a live-model reply citing the documents, and the side panel showing the cited passages with their document, version and section." width="960">
+
+Live run: `z-ai/glm-5.3-flash` writes replies and `amazon/titan-embed-text-v2` provides embeddings via OpenRouter. CRM delivery is simulated. See [Screenshots](#screenshots).
 
 ## What the demo shows
 
@@ -21,35 +26,38 @@ Screenshot taken in the local demo mode: the reply is assembled from quotes of t
 
 ## Screenshots
 
-All frames are real runs of the demo on a fresh database in the local demo modes (`LLM_PROVIDER=local`, `EMBEDDING_PROVIDER=local`, `CRM_PROVIDER=simulated`): the replies are quotes of the documents, not text written by an AI model, and every delivery is labeled "simulated". The names and contacts are made up.
+The hero, handoff review, inquiry review and mobile frames are live-model runs on a fresh database: `z-ai/glm-5.3-flash` replies and `amazon/titan-embed-text-v2` embeddings via OpenRouter, with simulated CRM. The other frames are from local/simulated demo mode, as labeled below. The names and contacts are made up.
 
 <table>
   <tr>
     <td width="50%" valign="top">
       <img src="docs/screenshots/knowledge-gap-handoff-review.png" alt="A question the documents do not answer: the assistant says it could not find an answer and offers to pass the question to a person; the side panel shows the request for review with the contact details and a notice that delivery is simulated.">
-      <br>A question the documents do not answer: no guess, an offer to talk to a person, and a review step before anything is sent.
+      <br>Live-model, <code>z-ai/glm-5.3-flash</code>: a question the documents do not answer, an offer to talk to a person, and a review step before anything is sent.
     </td>
     <td width="50%" valign="top">
-      <img src="docs/screenshots/inquiry-review.png" alt="A purchase request that also asks about the warranty: the reply quotes the warranty passage first, then the side panel shows the filled inquiry for review with a Confirm and send button.">
-      <br>"I want 12 LP-420 printers, what is the warranty?": the question is answered first, the inquiry waits for confirmation.
+      <img src="docs/screenshots/inquiry-review.png" alt="A purchase request that also asks about the warranty: the live-model reply answers the warranty question first, then the side panel shows the filled inquiry for review with a Confirm and send button.">
+      <br>Live-model, <code>z-ai/glm-5.3-flash</code>: "I want 12 LP-420 printers, what is the warranty?" The question is answered first, the inquiry waits for confirmation.
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/screenshots/inquiry-delivered.png" alt="The same inquiry after confirmation: the side panel shows the delivery status Delivery simulated, one attempt, and the data that was sent.">
-      <br>After confirmation: the delivery status and the data that was sent. The simulated CRM receives nothing and the interface says so.
+      <img src="docs/screenshots/inquiry-delivered.png" alt="A local-mode inquiry after confirmation: the side panel shows the delivery status Delivery simulated, one attempt, and the data that was sent.">
+      <br>Local/simulated mode. After confirmation: the delivery status and the data that was sent. The simulated CRM receives nothing and the interface says so.
     </td>
     <td width="50%" valign="top">
       <img src="docs/screenshots/admin-inquiries-delivery-log.png" alt="The admin page, Inquiries tab: three inquiries with their delivery status, and the delivery log of one of them with two failed attempts and a successful third.">
-      <br>Admin, inquiries: every inquiry with its status. The open log shows two temporary errors (the <code>+fail2</code> tag) and a delivery on the third attempt.
+      <br>Local/simulated mode. Admin, inquiries: every inquiry with its status. The open log shows two temporary errors (the <code>+fail2</code> tag) and a delivery on the third attempt.
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/screenshots/mobile-chat-answer.png" alt="The visitor chat on a 390 by 844 pixel screen: the question, the reply with a quoted passage and one source card." width="260">
-      <br>The chat at 390 by 844 pixels.
+      <img src="docs/screenshots/mobile-chat-answer.png" alt="The visitor chat on a 390 by 844 pixel screen: the shipping question and the live-model reply with document citations." width="260">
+      <br>Live-model, <code>z-ai/glm-5.3-flash</code>: the chat at 390 by 844 pixels.
     </td>
-    <td width="50%" valign="top"></td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/local-mode-chat-answer.png" alt="Local demo mode: a shipping answer assembled from document quotes, with its cited passage.">
+      <br>Local demo mode: the reply quotes documents without an LLM. CRM delivery is simulated.
+    </td>
   </tr>
 </table>
 
@@ -73,7 +81,7 @@ Three common shortcuts: a general chat model with no company context, a bot whos
 | Updating knowledge | Not possible | Edit the prompt by hand, within its size limit | Change the prompt or the code | Upload, replace or delete a document; an old version is not cited |
 | Attempts to rewrite the instructions | Left to the model | Left to the model | Left to the model | A pattern-based override guard on messages and document text, covered by 5 evaluation cases |
 | Actions | Text only | Text only | Text only | Inquiry and human handoff after visitor confirmation; CRM delivery with an idempotency key, retries and an attempt log |
-| Measured quality | No built-in evaluation | No built-in evaluation | No built-in evaluation | 40 evaluation cases; with a live LLM, 37 of 40 passed after an AI coding agent reviewed the open checks ([report](evals/reports/live-glm-5.3-flash/report.md)) |
+| Measured quality | No built-in evaluation | No built-in evaluation | No built-in evaluation | Live-model automated first pass: 15 pass / 3 fail / 22 needing review. After review: 37/40 passed. Reviewed by an AI coding agent (Claude), not an independent person. ([report](evals/reports/live-glm-5.3-flash/report.md)) |
 
 Retrieval and the citation check reduce made-up answers; they do not remove them. The model can still misread a passage it found and cite it. These results were measured on the demo corpus only; see [Evaluation](#evaluation) and [Limitations](#limitations).
 
@@ -95,7 +103,7 @@ Version 1. The scenario above works end to end in the demo modes and is covered 
 | Purchase inquiries and human handoff: draft, preview, confirmation, delivery, retries | Works with the simulated CRM. The HubSpot provider is tested against an in-memory fake of the HubSpot API only. |
 | Visitor chat and admin page | Work. Checked in a browser on a real backend at 390 by 844 and 1440 by 1000 pixels. |
 
-**Evaluated once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: 37 of the 40 evaluation cases passed after a review of the open checks by an AI coding agent. The report is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md).
+**Evaluated once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: automated first pass 15 pass / 3 fail / 22 needing review; after review 37/40 passed. Reviewed by an AI coding agent (Claude), not an independent person. The report is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md).
 
 **Not verified.** No HubSpot account and no Docker host were available, so these have never been run by hand:
 
@@ -203,6 +211,8 @@ Every setting has a default that runs the demo, and every setting is listed with
 
 ## Evaluation
 
+Live-model automated first pass: **15 pass / 3 fail / 22 needing review**. After review: **37/40 passed**. The open checks were reviewed by an AI coding agent (Claude) on November 14, 2026, not by an independent person. It read every listed reply and its cited excerpts in `results.json` and compared them with the check, case notes and, where needed, corpus text. A second AI agent drafted verdicts independently; the two agreed on all 40 items. See the exact [reviewer and method](evals/reports/live-glm-5.3-flash/manual-review.json).
+
 `make eval` runs 40 evaluation cases on an isolated database and writes a report and a machine-readable results file to `evals/reports/latest/`. The cases cover answerable questions, questions the knowledge base cannot answer, multi-turn conversations and attempts to override instructions.
 
 `make eval` uses the LLM and embedding providers set in `.env`. After `make configure` with a live API, it calls that API and the run costs money; to run it in the demo modes, prefix it with `LLM_PROVIDER=local EMBEDDING_PROVIDER=local`. A run in the local modes measures retrieval by shared words and the rules that assemble a reply from quotes, not the quality of an LLM. The exit code 0 means that the run completed, not that the cases passed: read the report.
@@ -238,7 +248,7 @@ The demo is deliberately narrow, and an implementation for a client keeps the sa
 
 - **One document source.** The company's own documents, uploaded on the admin page or listed in a manifest like [`knowledge-base/northline/manifest.json`](knowledge-base/northline/manifest.json). The assistant answers from the active versions only.
 - **One channel.** A web chat. Email, messengers and voice are not part of it.
-- **One CRM process.** A confirmed inquiry becomes a contact with a note in HubSpot. Deals, pipelines, owners and custom properties are not written.
+- **One CRM process.** A confirmed inquiry becomes a contact with a note in HubSpot. HubSpot delivery has not yet been tested on a live HubSpot account, only against an in-memory fake. Deals, pipelines, owners and custom properties are not written.
 
 What is configured without code: the LLM and embedding API and models, the CRM mode and key, the admin token, the documents, the upload limit, delivery attempts and retry timing.
 
