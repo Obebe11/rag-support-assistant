@@ -81,7 +81,7 @@ Three common shortcuts: a general chat model with no company context, a bot whos
 | Updating knowledge | Not possible | Edit the prompt by hand, within its size limit | Change the prompt or the code | Upload, replace or delete a document; an old version is not cited |
 | Attempts to rewrite the instructions | Left to the model | Left to the model | Left to the model | A pattern-based override guard on messages and document text, covered by 5 evaluation cases |
 | Actions | Text only | Text only | Text only | Inquiry and human handoff after visitor confirmation; CRM delivery with an idempotency key, retries and an attempt log |
-| Measured quality | No built-in evaluation | No built-in evaluation | No built-in evaluation | Live-model automated first pass: 15 pass / 3 fail / 22 needing review. After review: 37/40 passed. Reviewer: Claude, the AI coding agent that fixed the clarification citations and made this run, not an independent human reviewer ([report](evals/reports/live-glm-5.3-flash/report.md)) |
+| Measured quality | No built-in evaluation | No built-in evaluation | No built-in evaluation | Live-model automated first pass: 15 pass / 3 fail / 22 needing review. After review: 37/40 passed. Reviewed by an AI coding agent (Claude), not an independent person. ([report](evals/reports/live-glm-5.3-flash/report.md)) |
 
 Retrieval and the citation check reduce made-up answers; they do not remove them. The model can still misread a passage it found and cite it. These results were measured on the demo corpus only; see [Evaluation](#evaluation) and [Limitations](#limitations).
 
@@ -103,7 +103,7 @@ Version 1. The scenario above works end to end in the demo modes and is covered 
 | Purchase inquiries and human handoff: draft, preview, confirmation, delivery, retries | Works with the simulated CRM. The HubSpot provider is tested against an in-memory fake of the HubSpot API only. |
 | Visitor chat and admin page | Work. Checked in a browser on a real backend at 390 by 844 and 1440 by 1000 pixels. |
 
-**Evaluated once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: automated first pass 15 pass / 3 fail / 22 needing review; after review 37/40 passed. Reviewer: Claude, the AI coding agent that fixed the clarification citations and made this run, not an independent human reviewer. The report is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md).
+**Evaluated once with live models.** Through OpenRouter, with `z-ai/glm-5.3-flash` and `amazon/titan-embed-text-v2`: automated first pass 15 pass / 3 fail / 22 needing review; after review 37/40 passed. Reviewed by an AI coding agent (Claude), not an independent person. The report is in [`evals/reports/live-glm-5.3-flash/`](evals/reports/live-glm-5.3-flash/report.md).
 
 **Not verified.** No HubSpot account and no Docker host were available, so these have never been run by hand:
 
@@ -211,7 +211,7 @@ Every setting has a default that runs the demo, and every setting is listed with
 
 ## Evaluation
 
-Live-model automated first pass: **15 pass / 3 fail / 22 needing review**. After review: **37/40 passed**. The reviewer was Claude, the AI coding agent that fixed the clarification citations and made this run (November 14, 2026), not an independent human reviewer. It read every listed reply and its cited excerpts in `results.json` and compared them with the check, case notes and, where needed, corpus text. A second AI agent drafted verdicts independently; the two agreed on all 40 items. See the exact [reviewer and method](evals/reports/live-glm-5.3-flash/manual-review.json).
+Live-model automated first pass: **15 pass / 3 fail / 22 needing review**. After review: **37/40 passed**. The open checks were reviewed by an AI coding agent (Claude) on November 14, 2026, not by an independent person. It read every listed reply and its cited excerpts in `results.json` and compared them with the check, case notes and, where needed, corpus text. A second AI agent drafted verdicts independently; the two agreed on all 40 items. See the exact [reviewer and method](evals/reports/live-glm-5.3-flash/manual-review.json).
 
 `make eval` runs 40 evaluation cases on an isolated database and writes a report and a machine-readable results file to `evals/reports/latest/`. The cases cover answerable questions, questions the knowledge base cannot answer, multi-turn conversations and attempts to override instructions.
 
